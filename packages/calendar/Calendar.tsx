@@ -1,3 +1,3 @@
 export const Calendar = () => {
-  return <>Calendar</>;
+  return <table role="grid"></table>;
 };
