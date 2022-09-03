@@ -15,13 +15,18 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@types/ramda": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
     "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
     "eslint-config-custom": "*",
     "jsdom": "latest",
     "prettier": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "turbo": "latest",
+    "typescript": "latest",
     "vitest": "latest",
     "vitest-axe": "latest",
     "vitest-dom": "latest"
