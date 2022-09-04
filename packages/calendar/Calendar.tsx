@@ -1,127 +1,125 @@
-import {
-  add,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  getDay,
-  isSameDay,
-  startOfMonth,
-  startOfWeek,
-  sub,
-} from "date-fns";
-import { concat, repeat, splitEvery } from "ramda";
-import { useEffect, useReducer, useState } from "react";
+import { add, endOfWeek, format, startOfWeek, sub } from "date-fns";
+import { Dispatch, ReactNode, useEffect, useReducer } from "react";
 
-function useKeyPress() {
-  const [isPress, setPress] = useState<string | undefined>(undefined);
+type Control = "previous" | "next" | "start of" | "end of";
+type Unit = "year" | "month" | "week" | "day";
+type Action = `${Control} ${Unit}`;
+function reducer(date: Date, action: Action) {
+  if (action === "previous month") {
+    return sub(date, { months: 1 });
+  }
+  if (action === "next month") {
+    return add(date, { months: 1 });
+  }
+  if (action === "previous year") {
+    return sub(date, { years: 1 });
+  }
+  if (action === "next year") {
+    return add(date, { years: 1 });
+  }
+  if (action === "next week") {
+    return add(date, { weeks: 1 });
+  }
+  if (action === "previous week") {
+    return sub(date, { weeks: 1 });
+  }
+  if (action === "next day") {
+    return add(date, { days: 1 });
+  }
+  if (action === "previous day") {
+    return sub(date, { days: 1 });
+  }
+  if (action === "start of week") {
+    return startOfWeek(date);
+  }
+  if (action === "end of week") {
+    return endOfWeek(date);
+  }
+  return date;
+}
+
+const keymap =
+  (dispatch: Dispatch<Action>) =>
+  ({ shiftKey, key }: KeyboardEvent) => {
+    if (shiftKey && key === "PageUp") {
+      return dispatch("previous year");
+    }
+    if (shiftKey && key === "PageDown") {
+      return dispatch("next year");
+    }
+    if (key === "PageUp") {
+      return dispatch("previous month");
+    }
+    if (key === "PageDown") {
+      return dispatch("next month");
+    }
+    if (key === "ArrowDown") {
+      return dispatch("next week");
+    }
+    if (key === "ArrowUp") {
+      return dispatch("previous week");
+    }
+    if (key === "ArrowLeft") {
+      return dispatch("previous day");
+    }
+    if (key === "ArrowRight") {
+      return dispatch("next day");
+    }
+    if (key === "Home") {
+      return dispatch("start of week");
+    }
+    if (key === "End") {
+      return dispatch("end of week");
+    }
+  };
+
+type CalendarProps = {
+  value?: Date;
+  children?: (date: Date) => ReactNode;
+};
+export function Calendar(props: CalendarProps) {
+  const [focus, dispatch] = useReducer(reducer, props.value ?? new Date());
+  const previousMonth = () => dispatch("previous month");
+  const nextMonth = () => dispatch("next month");
+  const previousYear = () => dispatch("previous year");
+  const nextYear = () => dispatch("next year");
 
   useEffect(() => {
-    const keydown = ({ key }: KeyboardEvent) => setPress(key);
-    const keyup = ({ key }: KeyboardEvent) =>
-      isPress === key && setPress(undefined);
+    const keydown = keymap(dispatch);
 
     window.addEventListener("keydown", keydown);
-    window.addEventListener("keyup", keyup);
-
     return () => {
       window.removeEventListener("keydown", keydown);
-      window.removeEventListener("keyup", keyup);
     };
-  }, [isPress, setPress]);
-
-  return isPress;
-}
-
-const getDatesInMonth = (focusOn: Date) =>
-  eachDayOfInterval({
-    start: startOfMonth(focusOn),
-    end: endOfMonth(focusOn),
-  });
-
-const focus = (isFocus: boolean) =>
-  isFocus
-    ? {
-        tabIndex: 0,
-        ref: (el: HTMLElement | null) => el?.focus(),
-      }
-    : {
-        tabIndex: -1,
-      };
-
-function Reducer(focusOn: Date, key: string) {
-  if (key === "ArrowDown") {
-    return add(focusOn, { weeks: 1 });
-  }
-
-  if (key === "ArrowUp") {
-    return sub(focusOn, { weeks: 1 });
-  }
-
-  if (key === "ArrowLeft") {
-    return sub(focusOn, { days: 1 });
-  }
-
-  if (key === "ArrowRight") {
-    return add(focusOn, { days: 1 });
-  }
-
-  if (key === "Home") {
-    return startOfWeek(focusOn);
-  }
-
-  if (key === "End") {
-    return endOfWeek(focusOn);
-  }
-
-  return focusOn;
-}
-
-type MonthCalendarProps = {
-  focusOn?: Date;
-};
-export const MonthCalendar = (props: MonthCalendarProps) => {
-  const [focusOn, dispatch] = useReducer(Reducer, props.focusOn ?? new Date());
-
-  const keypress = useKeyPress();
-  useEffect(() => {
-    if (keypress) dispatch(keypress);
-  }, [keypress]);
-
-  const days = concat(
-    repeat(undefined, getDay(startOfMonth(focusOn))),
-    getDatesInMonth(focusOn)
-  );
-
-  const table = splitEvery(7, days);
+  }, [dispatch]);
 
   return (
-    <table role="grid">
-      <thead>
-        <tr>
-          <th abbr="Sunday">Su</th>
-          <th abbr="Monday">Mo</th>
-          <th abbr="Tuesday">Tu</th>
-          <th abbr="Wednesday">We</th>
-          <th abbr="Thursday">Th</th>
-          <th abbr="Friday">Fr</th>
-          <th abbr="Saturday">Sa</th>
-        </tr>
-      </thead>
-      <tbody>
-        {table.map((row, index) => (
-          <tr key={index}>
-            {row.map((day, index) => (
-              <td
-                key={index}
-                {...focus(Boolean(day && isSameDay(day, focusOn)))}
-              >
-                {day ? format(day, "dd") : null}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div>
+      <header>
+        <button type="button" aria-label="previous year" onClick={previousYear}>
+          {"<<"}
+        </button>
+
+        <button
+          type="button"
+          aria-label="previous month"
+          onClick={previousMonth}
+        >
+          {"<"}
+        </button>
+
+        <h2 aria-live="polite">{format(focus, "MMMM yyyy")}</h2>
+
+        <button type="button" aria-label="next month" onClick={nextMonth}>
+          {">"}
+        </button>
+
+        <button type="button" aria-label="next year" onClick={nextYear}>
+          {">>"}
+        </button>
+      </header>
+
+      {props.children?.(focus)}
+    </div>
   );
-};
+}

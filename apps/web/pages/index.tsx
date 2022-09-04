@@ -1,9 +1,9 @@
-import { MonthCalendar } from "calendar";
+import { Calendar } from "calendar";
 
 export default function Web() {
   return (
     <div className="h-screen w-screen grid place-content-center">
-      <MonthCalendar />
+      <Calendar />
     </div>
   );
 }

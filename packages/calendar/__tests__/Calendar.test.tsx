@@ -1,196 +1,221 @@
-/// <reference types="vitest-axe/extend-expect" />
-/// <reference types="vitest-dom/extend-expect" />
-
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MonthCalendar } from "../Calendar";
-import {
-  add,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfWeek,
-  sub,
-} from "date-fns";
+import { add, endOfWeek, format, startOfWeek, sub } from "date-fns";
+import { describe, expect, it } from "vitest";
+import { Calendar } from "../Calendar";
+import { MonthCalendar } from "../MonthCalendar";
 
-describe("<MonthCalendar />", () => {
-  describe("WeekDay Header", () => {
-    it.each([
-      ["Su", "Sunday"],
-      ["Mo", "Monday"],
-      ["Tu", "Tuesday"],
-      ["We", "Wednesday"],
-      ["Th", "Thursday"],
-      ["Fr", "Friday"],
-      ["Sa", "Saturday"],
-    ])("the day %s in the column headers", (name, abbr) => {
-      const el = render(<MonthCalendar />).getByRole("columnheader", { name });
-      expect(el).toBeInTheDocument();
-      expect(el).toHaveAttribute("abbr", abbr);
+describe("<Calendar />", () => {
+  describe("calendar should render correctly", () => {
+    it("should render button for change previous/next month/year", () => {
+      render(<Calendar />);
+      expect(screen.getByRole("button", { name: /previous year/ }));
+      expect(screen.getByRole("button", { name: /previous month/ }));
+      expect(screen.getByRole("button", { name: /next year/ }));
+      expect(screen.getByRole("button", { name: /next month/ }));
+    });
+
+    it("calendar heading displaying the month and year is marked up as a live region", () => {
+      render(<Calendar value={new Date(0)} />);
+      const element = screen.getByRole("heading");
+      expect(element).toHaveTextContent("January 1970");
+      expect(element).toHaveAttribute("aria-live", "polite");
     });
   });
+});
 
-  describe("Date Grid", () => {
-    //
-    it("Identifies the table element as a grid widget.", () =>
-      expect(render(<MonthCalendar />).getByRole("grid")).toBeInTheDocument());
+describe("Integration: Calendar with MonthCalendar", () => {
+  const setup = () => {
+    userEvent.setup();
+    render(
+      <Calendar value={new Date(0)}>
+        {(focus) => <MonthCalendar focus={focus} />}
+      </Calendar>
+    );
+  };
 
-    describe("If focusOn is January 1970", () => {
-      it("Should render days in month correctly", () =>
-        eachDayOfInterval({
-          start: new Date(0),
-          end: endOfMonth(new Date(0)),
-        }).forEach((day) =>
-          expect(
-            render(<MonthCalendar focusOn={new Date(0)} />).container
-          ).toHaveTextContent(RegExp(format(day, "dd")))
-        ));
+  it("when click previous/next month, should change the month and year displayed in the calendar", async () => {
+    setup();
 
-      it("the first day should Thursday", () =>
-        expect(
-          render(<MonthCalendar focusOn={new Date(0)} />)
-            .getAllByRole(/(grid)?cell/)
-            .at(4)
-        ).toHaveTextContent(RegExp(format(new Date(0), "dd"))));
+    const nextMonth = screen.getByRole("button", { name: /next month/ });
+    const prevMonth = screen.getByRole("button", { name: /previous month/ });
+    const nextYear = screen.getByRole("button", { name: /next year/ });
+    const prevYear = screen.getByRole("button", { name: /previous year/ });
+
+    expect(screen.getAllByRole(/(grid)?cell/).at(4)).toHaveTextContent("01");
+    expect(screen.getAllByRole(/(grid)?cell/).at(-1)).toHaveTextContent("31");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1970");
+
+    await userEvent.click(nextMonth);
+    expect(screen.getAllByRole(/(grid)?cell/).at(0)).toHaveTextContent("01");
+    expect(screen.getAllByRole(/(grid)?cell/).at(-1)).toHaveTextContent("28");
+    expect(screen.getByRole("heading")).toHaveTextContent("February 1970");
+
+    await userEvent.click(prevMonth);
+    expect(screen.getAllByRole(/(grid)?cell/).at(4)).toHaveTextContent("01");
+    expect(screen.getAllByRole(/(grid)?cell/).at(-1)).toHaveTextContent("31");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1970");
+
+    await userEvent.click(nextYear);
+    expect(screen.getAllByRole(/(grid)?cell/).at(5)).toHaveTextContent("01");
+    expect(screen.getAllByRole(/(grid)?cell/).at(-1)).toHaveTextContent("31");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1971");
+
+    await userEvent.click(prevYear);
+    expect(screen.getAllByRole(/(grid)?cell/).at(4)).toHaveTextContent("01");
+    expect(screen.getAllByRole(/(grid)?cell/).at(-1)).toHaveTextContent("31");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1970");
+  });
+
+  it("user can change month/year using keyboard", async () => {
+    setup();
+
+    await userEvent.keyboard("{PageDown}");
+    expect(screen.getByRole("heading")).toHaveTextContent("February 1970");
+
+    await userEvent.keyboard("{PageUp}");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1970");
+
+    await userEvent.keyboard("{Shift>}{PageDown}{/Shift}");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1971");
+
+    await userEvent.keyboard("{Shift>}{PageUp}{/Shift}");
+    expect(screen.getByRole("heading")).toHaveTextContent("January 1970");
+  });
+
+  it(
+    "Sets focus on the same day of the same week." +
+      "If that day does not exist, then moves focus to the same day of the previous or next week.",
+    async () => {
+      setup();
+
+      let index = screen
+        .getAllByRole(/(grid)?cell/)
+        .findIndex((el) => el === document.activeElement);
+      expect(index % 7).toBe(4);
+
+      await userEvent.keyboard("{PageDown}");
+      index = screen
+        .getAllByRole(/(grid)?cell/)
+        .findIndex((el) => el === document.activeElement);
+      expect(index % 7).toBe(0);
+
+      await userEvent.keyboard("{PageUp}");
+      index = screen
+        .getAllByRole(/(grid)?cell/)
+        .findIndex((el) => el === document.activeElement);
+      expect(index % 7).toBe(4);
+
+      await userEvent.keyboard("{Shift>}{PageDown}{/Shift}");
+      index = screen
+        .getAllByRole(/(grid)?cell/)
+        .findIndex((el) => el === document.activeElement);
+      expect(index % 7).toBe(5);
+
+      await userEvent.keyboard("{Shift>}{PageUp}{/Shift}");
+      index = screen
+        .getAllByRole(/(grid)?cell/)
+        .findIndex((el) => el === document.activeElement);
+      expect(index % 7).toBe(4);
+    }
+  );
+
+  describe("When the component contains focus and the user presses a navigation key", () => {
+    it(`set tabindex="-1" on the element that has tabindex="0"`, async () => {
+      setup();
+
+      const element = screen.getByText("01");
+      expect(element).toHaveAttribute("tabindex", "0");
+
+      await userEvent.keyboard("[ArrowDown]");
+      expect(element).toHaveAttribute("tabindex", "-1");
+
+      await userEvent.keyboard("[ArrowUp]");
+      expect(element).toHaveAttribute("tabindex", "0");
+
+      await userEvent.keyboard("[ArrowLeft]");
+      expect(element).toHaveAttribute("tabindex", "-1");
+
+      await userEvent.keyboard("[ArrowRight]");
+      expect(element).toHaveAttribute("tabindex", "0");
     });
 
-    describe("Makes the cell focusable, and implement Roving tabindex", () => {
-      //
-      describe("When the component container is loaded or created", () => {
-        it("If focusOn is January 1970, should be focus on January 1970", () => {
-          render(<MonthCalendar focusOn={new Date(0)} />);
+    it(`set tabindex="0" on the element that will become focused`, async () => {
+      setup();
 
-          expect(document.activeElement).toHaveTextContent(
-            RegExp(format(new Date(0), "dd"))
-          );
-        });
+      let current = new Date(0);
+      const getByText = screen.getByText;
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
 
-        it("Default focus on today", () => {
-          render(<MonthCalendar />);
+      await userEvent.keyboard("[ArrowDown]");
+      current = add(current, { weeks: 1 });
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
 
-          expect(document.activeElement).toHaveTextContent(
-            RegExp(format(new Date(), "dd"))
-          );
-        });
+      await userEvent.keyboard("[ArrowUp]");
+      current = sub(current, { weeks: 1 });
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
 
-        it(`Set tabindex="0" on the element that will initially be included in the tab sequence`, () => {
-          render(<MonthCalendar />);
+      await userEvent.keyboard("[ArrowLeft]");
+      current = sub(current, { days: 1 });
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
 
-          expect(document.activeElement).toHaveAttribute("tabindex", "0");
-        });
+      await userEvent.keyboard("[ArrowRight]");
+      current = add(current, { days: 1 });
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
 
-        it(`Set tabindex="-1" on all other focusable elements it contains.`, () => {
-          Array.from(
-            render(<MonthCalendar />).container.querySelectorAll(`[tabindex]`)
-          )
-            .filter((el) => el !== document.activeElement)
-            .forEach((el) => expect(el).toHaveAttribute("tabindex", "-1"));
-        });
-      });
+      await userEvent.keyboard("[Home]");
+      current = startOfWeek(current);
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
 
-      describe("When the component contains focus and the user presses a navigation key", () => {
-        it(`set tabindex="-1" on the element that has tabindex="0"`, async () => {
-          const user = userEvent.setup();
+      await userEvent.keyboard("[End]");
+      current = endOfWeek(current);
+      expect(getByText(format(current, "dd")))
+        //
+        .toHaveAttribute("tabindex", "0");
+    });
 
-          const element = render(
-            <MonthCalendar focusOn={new Date(0)} />
-          ).getByText(format(new Date(0), "dd"));
+    it(`Set focus, element.focus(), on the element that has tabindex="0"`, async () => {
+      setup();
 
-          expect(element).toHaveAttribute("tabindex", "0");
+      let current = new Date(0);
+      const getByText = screen.getByText;
+      expect(getByText(format(current, "dd"))).toHaveFocus();
 
-          await user.keyboard("[ArrowDown]");
-          expect(element).toHaveAttribute("tabindex", "-1");
+      await userEvent.keyboard("[ArrowDown]");
+      current = add(current, { weeks: 1 });
+      expect(getByText(format(current, "dd"))).toHaveFocus();
 
-          await user.keyboard("[ArrowUp]");
-          expect(element).toHaveAttribute("tabindex", "0");
+      await userEvent.keyboard("[ArrowUp]");
+      current = sub(current, { weeks: 1 });
+      expect(getByText(format(current, "dd"))).toHaveFocus();
 
-          await user.keyboard("[ArrowLeft]");
-          expect(element).toHaveAttribute("tabindex", "-1");
+      await userEvent.keyboard("[ArrowLeft]");
+      current = sub(current, { days: 1 });
+      expect(getByText(format(current, "dd"))).toHaveFocus();
 
-          await user.keyboard("[ArrowRight]");
-          expect(element).toHaveAttribute("tabindex", "0");
-        });
+      await userEvent.keyboard("[ArrowRight]");
+      current = add(current, { days: 1 });
+      expect(getByText(format(current, "dd"))).toHaveFocus();
 
-        it(`set tabindex="0" on the element that will become focused`, async () => {
-          const user = userEvent.setup();
+      await userEvent.keyboard("[Home]");
+      current = startOfWeek(current);
+      expect(getByText(format(current, "dd"))).toHaveFocus();
 
-          let current = new Date(0);
-          const { getByText } = render(<MonthCalendar focusOn={current} />);
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-
-          await user.keyboard("[ArrowDown]");
-          current = add(current, { weeks: 1 });
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-
-          await user.keyboard("[ArrowUp]");
-          current = sub(current, { weeks: 1 });
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-
-          await user.keyboard("[ArrowLeft]");
-          current = sub(current, { days: 1 });
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-
-          await user.keyboard("[ArrowRight]");
-          current = add(current, { days: 1 });
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-
-          await user.keyboard("[Home]");
-          current = startOfWeek(current);
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-
-          await user.keyboard("[End]");
-          current = endOfWeek(current);
-          expect(getByText(format(current, "dd")))
-            //
-            .toHaveAttribute("tabindex", "0");
-        });
-
-        it(`Set focus, element.focus(), on the element that has tabindex="0"`, async () => {
-          const user = userEvent.setup();
-
-          let current = new Date(0);
-          const { getByText } = render(<MonthCalendar focusOn={current} />);
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-
-          await user.keyboard("[ArrowDown]");
-          current = add(current, { weeks: 1 });
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-
-          await user.keyboard("[ArrowUp]");
-          current = sub(current, { weeks: 1 });
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-
-          await user.keyboard("[ArrowLeft]");
-          current = sub(current, { days: 1 });
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-
-          await user.keyboard("[ArrowRight]");
-          current = add(current, { days: 1 });
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-
-          await user.keyboard("[Home]");
-          current = startOfWeek(current);
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-
-          await user.keyboard("[End]");
-          current = endOfWeek(current);
-          expect(getByText(format(current, "dd"))).toHaveFocus();
-        });
-      });
+      await userEvent.keyboard("[End]");
+      current = endOfWeek(current);
+      expect(getByText(format(current, "dd"))).toHaveFocus();
     });
   });
 });
