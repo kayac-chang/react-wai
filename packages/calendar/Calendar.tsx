@@ -1,5 +1,12 @@
 import { add, endOfWeek, format, startOfWeek, sub } from "date-fns";
-import { Dispatch, ReactNode, useEffect, useReducer } from "react";
+import {
+  createContext,
+  Dispatch,
+  ReactNode,
+  useContext,
+  useEffect,
+  useReducer,
+} from "react";
 
 type Control = "previous" | "next" | "start of" | "end of";
 type Unit = "year" | "month" | "week" | "day";
@@ -73,16 +80,86 @@ const keymap =
     }
   };
 
+interface State {
+  focus: Date;
+  dispatch: Dispatch<Action>;
+}
+export const Context = createContext<State | null>(null);
+
+function useCalendarContext(error: string) {
+  const context = useContext(Context);
+
+  if (!context) {
+    throw new Error(error);
+  }
+
+  return context;
+}
+
+type HeaderProps = {
+  children?: ReactNode;
+  className?: string;
+};
+function Header(props: HeaderProps) {
+  useCalendarContext(
+    `<Calendar.Header /> cannot be rendered outside <Calendar />`
+  );
+  return <header className={props.className}>{props.children}</header>;
+}
+
+type ButtonProps = {
+  action: Action;
+  children?: ReactNode;
+  className?: string;
+};
+function Button(props: ButtonProps) {
+  const context = useCalendarContext(
+    `<Calendar.Button /> cannot be rendered outside <Calendar />`
+  );
+
+  const onClick = () => context.dispatch(props.action);
+
+  return (
+    <button
+      type="button"
+      aria-label={props.action}
+      onClick={onClick}
+      className={props.className}
+    >
+      {props.children}
+    </button>
+  );
+}
+
+type Level = 1 | 2 | 3 | 4 | 5 | 6;
+type TitleProps = {
+  as?: `h${Level}`;
+  children?: ReactNode;
+  className?: string;
+};
+function Title(props: TitleProps) {
+  const context = useCalendarContext(
+    `<Calendar.Title /> cannot be rendered outside <Calendar />`
+  );
+
+  const Comp = props.as ?? "h2";
+  const children = props.children ?? format(context.focus, "MMMM yyyy");
+
+  return (
+    <Comp aria-live="polite" className={props.className}>
+      {children}
+    </Comp>
+  );
+}
+
 type CalendarProps = {
   value?: Date;
-  children?: (date: Date) => ReactNode;
+  children?: ReactNode;
+  as?: keyof HTMLElementTagNameMap;
+  className?: string;
 };
 export function Calendar(props: CalendarProps) {
   const [focus, dispatch] = useReducer(reducer, props.value ?? new Date());
-  const previousMonth = () => dispatch("previous month");
-  const nextMonth = () => dispatch("next month");
-  const previousYear = () => dispatch("previous year");
-  const nextYear = () => dispatch("next year");
 
   useEffect(() => {
     const keydown = keymap(dispatch);
@@ -93,33 +170,15 @@ export function Calendar(props: CalendarProps) {
     };
   }, [dispatch]);
 
+  const Comp = props.as ?? "div";
+
   return (
-    <div>
-      <header>
-        <button type="button" aria-label="previous year" onClick={previousYear}>
-          {"<<"}
-        </button>
-
-        <button
-          type="button"
-          aria-label="previous month"
-          onClick={previousMonth}
-        >
-          {"<"}
-        </button>
-
-        <h2 aria-live="polite">{format(focus, "MMMM yyyy")}</h2>
-
-        <button type="button" aria-label="next month" onClick={nextMonth}>
-          {">"}
-        </button>
-
-        <button type="button" aria-label="next year" onClick={nextYear}>
-          {">>"}
-        </button>
-      </header>
-
-      {props.children?.(focus)}
-    </div>
+    <Context.Provider value={{ focus, dispatch }}>
+      <Comp className={props.className}>{props.children}</Comp>
+    </Context.Provider>
   );
 }
+
+Calendar.Header = Header;
+Calendar.Button = Button;
+Calendar.Title = Title;

@@ -8,7 +8,14 @@ import { MonthCalendar } from "../MonthCalendar";
 describe("<Calendar />", () => {
   describe("calendar should render correctly", () => {
     it("should render button for change previous/next month/year", () => {
-      render(<Calendar />);
+      render(
+        <Calendar>
+          <Calendar.Button action="previous year" />
+          <Calendar.Button action="previous month" />
+          <Calendar.Button action="next year" />
+          <Calendar.Button action="next month" />
+        </Calendar>
+      );
       expect(screen.getByRole("button", { name: /previous year/ }));
       expect(screen.getByRole("button", { name: /previous month/ }));
       expect(screen.getByRole("button", { name: /next year/ }));
@@ -16,7 +23,11 @@ describe("<Calendar />", () => {
     });
 
     it("calendar heading displaying the month and year is marked up as a live region", () => {
-      render(<Calendar value={new Date(0)} />);
+      render(
+        <Calendar value={new Date(0)}>
+          <Calendar.Title />
+        </Calendar>
+      );
       const element = screen.getByRole("heading");
       expect(element).toHaveTextContent("January 1970");
       expect(element).toHaveAttribute("aria-live", "polite");
@@ -29,7 +40,21 @@ describe("Integration: Calendar with MonthCalendar", () => {
     userEvent.setup();
     render(
       <Calendar value={new Date(0)}>
-        {(focus) => <MonthCalendar focus={focus} />}
+        <Calendar.Header>
+          <Calendar.Button action="previous year">{"<<"}</Calendar.Button>
+          <Calendar.Button action="previous month">{"<"}</Calendar.Button>
+
+          <Calendar.Title />
+
+          <Calendar.Button action="next month">{">"}</Calendar.Button>
+          <Calendar.Button action="next year">{">>"}</Calendar.Button>
+        </Calendar.Header>
+
+        <MonthCalendar>
+          <MonthCalendar.ColumnHeader />
+
+          <MonthCalendar.GridCell />
+        </MonthCalendar>
       </Calendar>
     );
   };

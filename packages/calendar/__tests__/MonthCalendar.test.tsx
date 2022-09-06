@@ -17,7 +17,11 @@ describe("<MonthCalendar />", () => {
       ["Fr", "Friday"],
       ["Sa", "Saturday"],
     ])("the day %s in the column headers", (name, abbr) => {
-      render(<MonthCalendar />);
+      render(
+        <MonthCalendar>
+          <MonthCalendar.ColumnHeader />
+        </MonthCalendar>
+      );
 
       const el = screen.getByRole("columnheader", { name });
       expect(el).toBeInTheDocument();
@@ -35,7 +39,11 @@ describe("<MonthCalendar />", () => {
 
     describe("If focus on January 1970", () => {
       it("Should render days in month correctly", () => {
-        const { container } = render(<MonthCalendar focus={new Date(0)} />);
+        const { container } = render(
+          <MonthCalendar focus={new Date(0)}>
+            <MonthCalendar.GridCell />
+          </MonthCalendar>
+        );
 
         eachDayOfInterval({
           start: new Date(0),
@@ -46,7 +54,11 @@ describe("<MonthCalendar />", () => {
       });
 
       it("the first day should Thursday", () => {
-        render(<MonthCalendar focus={new Date(0)} />);
+        render(
+          <MonthCalendar focus={new Date(0)}>
+            <MonthCalendar.GridCell />
+          </MonthCalendar>
+        );
 
         expect(screen.getAllByRole(/(grid)?cell/).at(4))
           //
@@ -56,14 +68,20 @@ describe("<MonthCalendar />", () => {
       it("If focus on January 1970 first, then change focus to February 1970", () => {
         const first = new Date(0);
         const { rerender } = render(
-          <MonthCalendar focus={first} key={first.valueOf()} />
+          <MonthCalendar focus={first}>
+            <MonthCalendar.GridCell />
+          </MonthCalendar>
         );
         expect(screen.getAllByRole(/(grid)?cell/).at(4))
           //
           .toHaveTextContent("01");
 
         const second = add(new Date(0), { months: 1 });
-        rerender(<MonthCalendar focus={second} key={second.valueOf()} />);
+        rerender(
+          <MonthCalendar focus={second}>
+            <MonthCalendar.GridCell />
+          </MonthCalendar>
+        );
         expect(screen.getAllByRole(/(grid)?cell/).at(0))
           //
           .toHaveTextContent("01");
@@ -73,8 +91,12 @@ describe("<MonthCalendar />", () => {
     describe("Makes the cell focusable, and implement Roving tabindex", () => {
       //
       describe("When the component container is loaded or created", () => {
-        it("If focusOn is January 1970, should be focus on January 1970", () => {
-          render(<MonthCalendar focus={new Date(0)} />);
+        it("If focus is January 1970, should be focus on January 1970", () => {
+          render(
+            <MonthCalendar focus={new Date(0)}>
+              <MonthCalendar.GridCell />
+            </MonthCalendar>
+          );
 
           expect(document.activeElement)
             //
@@ -82,7 +104,11 @@ describe("<MonthCalendar />", () => {
         });
 
         it("Default focus on today", () => {
-          render(<MonthCalendar />);
+          render(
+            <MonthCalendar>
+              <MonthCalendar.GridCell />
+            </MonthCalendar>
+          );
 
           expect(document.activeElement)
             //
@@ -90,7 +116,11 @@ describe("<MonthCalendar />", () => {
         });
 
         it(`Set tabindex="0" on the element that will initially be included in the tab sequence`, () => {
-          render(<MonthCalendar />);
+          render(
+            <MonthCalendar>
+              <MonthCalendar.GridCell />
+            </MonthCalendar>
+          );
 
           expect(document.activeElement)
             //
