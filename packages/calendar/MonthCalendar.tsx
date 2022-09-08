@@ -4,19 +4,22 @@ import {
   getDay,
   isSameDay,
   startOfMonth,
-  Day,
   format,
+  startOfWeek,
+  add,
 } from "date-fns";
 import { concat, range, repeat, splitEvery } from "ramda";
 import {
   Children,
   cloneElement,
+  ComponentProps,
   createContext,
   isValidElement,
-  ReactNode,
   useContext,
 } from "react";
 import { Context as CalendarContext } from "./Calendar";
+import type { ReactNode } from "react";
+import type { EP } from "./utils/type";
 
 const getDatesInMonth = (focusOn: Date) =>
   eachDayOfInterval({
@@ -38,9 +41,7 @@ interface State {
   focus: Date;
   table: (Date | undefined)[][];
 }
-
 const Context = createContext<State | null>(null);
-
 function useMonthCalendarContext(error: string) {
   const context = useContext(Context);
 
@@ -51,50 +52,37 @@ function useMonthCalendarContext(error: string) {
   return context;
 }
 
-type ColumnHeaderProps = {
-  children?: (day: Day) => ReactNode;
-  className?: string;
+type _ColumnHeaderProps = {
+  abbr?: (day: Date) => string;
+  children?: (day: Date) => ReactNode;
 };
+type ColumnHeaderProps = EP<"th", _ColumnHeaderProps>;
 function ColumnHeader(props: ColumnHeaderProps) {
   useMonthCalendarContext(
     `<ColumnHeader /> cannot be rendered outside <MonthCalendar />`
   );
 
-  if (props.children) {
-    return <>{(range(0, 7) as Day[]).map(props.children)}</>;
-  }
-
   return (
     <>
-      <th className={props.className} abbr="Sunday">
-        Su
-      </th>
-      <th className={props.className} abbr="Monday">
-        Mo
-      </th>
-      <th className={props.className} abbr="Tuesday">
-        Tu
-      </th>
-      <th className={props.className} abbr="Wednesday">
-        We
-      </th>
-      <th className={props.className} abbr="Thursday">
-        Th
-      </th>
-      <th className={props.className} abbr="Friday">
-        Fr
-      </th>
-      <th className={props.className} abbr="Saturday">
-        Sa
-      </th>
+      {range(0, 7)
+        .map((days) => add(startOfWeek(new Date()), { days }))
+        .map((day) => (
+          <th
+            {...props}
+            role="columnheader"
+            abbr={props.abbr?.(day) ?? format(day, "EEEE")}
+            children={props.children?.(day) ?? format(day, "EEEEEE")}
+            key={day.toString()}
+          />
+        ))}
     </>
   );
 }
 
-type GridCellProps = {
+type _GridCellProps = {
   children?: (date: Date) => ReactNode;
-  className?: string;
 };
+export type GridCellProps = EP<"td", _GridCellProps>;
 function GridCell(props: GridCellProps) {
   const context = useMonthCalendarContext(
     `<GridCell /> cannot be rendered outside <MonthCalendar />`
@@ -112,23 +100,24 @@ function GridCell(props: GridCellProps) {
             // if child is valid react element, pass focus to the child
             if (isValidElement<{}>(element)) {
               return (
-                <td key={index} className={props.className}>
-                  {cloneElement(element, {
+                <td
+                  key={index}
+                  {...props}
+                  children={cloneElement(element, {
                     ...element.props,
                     ...focus(Boolean(day && isSameDay(day, focusOn))),
                   })}
-                </td>
+                />
               );
             }
 
             return (
               <td
                 key={index}
-                className={props.className}
+                {...props}
                 {...focus(Boolean(day && isSameDay(day, focusOn)))}
-              >
-                {element || (day && format(day, "dd"))}
-              </td>
+                children={element || (day && format(day, "dd"))}
+              />
             );
           })}
         </tr>
@@ -137,10 +126,8 @@ function GridCell(props: GridCellProps) {
   );
 }
 
-type MonthCalendarProps = {
+export type MonthCalendarProps = ComponentProps<"table"> & {
   focus?: Date;
-  children?: ReactNode;
-  className?: string;
 };
 export const MonthCalendar = (props: MonthCalendarProps) => {
   let columnheader: ReturnType<typeof ColumnHeader> | null = null;
@@ -159,7 +146,8 @@ export const MonthCalendar = (props: MonthCalendarProps) => {
 
   const context = useContext(CalendarContext);
 
-  const focus = props.focus ?? context?.focus ?? new Date();
+  let { focus, ...rest } = props;
+  focus = focus ?? context?.focus ?? new Date();
 
   const days = concat(
     repeat(undefined, getDay(startOfMonth(focus))),
@@ -170,9 +158,9 @@ export const MonthCalendar = (props: MonthCalendarProps) => {
 
   return (
     <Context.Provider value={{ focus, table }}>
-      <table role="grid" className={props.className}>
-        <thead>
-          <tr>{columnheader}</tr>
+      <table role="grid" {...rest}>
+        <thead role="rowgroup">
+          <tr role="row">{columnheader}</tr>
         </thead>
         <tbody>{gridcell}</tbody>
       </table>
