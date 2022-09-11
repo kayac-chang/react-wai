@@ -1,8 +1,8 @@
 {
   "name": "tabbable",
   "version": "0.0.0",
-  "main": "./index.tsx",
-  "types": "./index.tsx",
+  "main": "./index.ts",
+  "types": "./index.ts",
   "license": "MIT",
   "scripts": {
     "lint": "eslint *.ts*",
@@ -13,8 +13,5 @@
     "eslint": "^7.32.0",
     "eslint-config-custom": "*",
     "tsconfig": "*"
-  },
-  "dependencies": {
-    "ramda": "^0.28.0"
   }
 }

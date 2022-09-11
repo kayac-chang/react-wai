@@ -1,4 +1,4 @@
-import { isTabbable } from "../../src";
+import { isTabbable } from "../../index";
 import { render, screen } from "../support/e2e";
 
 describe("isTabbable", () => {

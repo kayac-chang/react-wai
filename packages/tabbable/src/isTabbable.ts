@@ -1,9 +1,7 @@
 import { getTabindex, is } from "./utils";
+import { defaultOption } from "./option";
 
-export interface Option {
-  displayCheck?: boolean;
-}
-function isTabbable(node: Element, option: Option = { displayCheck: true }) {
+function isTabbable(node: Element, option = defaultOption) {
   if (node.hasAttribute("disabled")) {
     return false;
   }

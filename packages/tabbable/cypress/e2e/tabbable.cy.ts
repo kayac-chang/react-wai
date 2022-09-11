@@ -1,5 +1,5 @@
 import { render } from "../support/e2e";
-import { tabbable } from "../../src";
+import { tabbable } from "../../index";
 
 describe("tabbable", () => {
   describe('correctly identifies tabbable elements in the "basic" example', () => {

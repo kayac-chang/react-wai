@@ -1,12 +1,13 @@
 import { isTabbable } from "./isTabbable";
+import { defaultOption } from "./option";
 import { getTabindex } from "./utils";
 
-function* traverse(root: Element) {
+function* traverse(root: Element, option = defaultOption) {
   const walker = document.createTreeWalker(
     root,
     NodeFilter.SHOW_ELEMENT,
     (node) =>
-      isTabbable(node as Element)
+      isTabbable(node as Element, option)
         ? NodeFilter.FILTER_ACCEPT
         : NodeFilter.FILTER_SKIP
   );
@@ -18,11 +19,11 @@ function* traverse(root: Element) {
   return;
 }
 
-function tabbable(root: Element) {
+function tabbable(root: Element, option = defaultOption) {
   const zero_index_elements: Element[] = [];
   const positive_index_map = new Map<number, Element[]>();
 
-  for (const element of traverse(root)) {
+  for (const element of traverse(root, option)) {
     const index = getTabindex(element);
 
     if (index === 0) {

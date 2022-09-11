@@ -8,7 +8,6 @@ export default defineConfig({
     __DEV__: true,
   },
   test: {
-    // silent: true,
     environment: "jsdom",
     coverage: {
       include: ["packages/*/__tests__/**/*.{ts,tsx,js,jsx}"],

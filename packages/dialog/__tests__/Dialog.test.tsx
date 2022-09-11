@@ -1,10 +1,11 @@
 /// <reference types="vitest-axe/extend-expect" />
 /// <reference types="vitest-dom/extend-expect" />
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Dialog } from "../Dialog";
+import { useState } from "react";
 
 describe("<Dialog />", () => {
   describe("roles/states/properties", () => {
@@ -57,11 +58,15 @@ describe("<Dialog />", () => {
       });
 
       it("dialog should has either", () => {
-        expect(() => render(<Dialog />)).toThrow(
+        const mock = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        expect(() => render(<Dialog />)).toThrowError(
           "dialog should has either: \n" +
             "- a value set for the aria-labelledby property that refers to a visible dialog title.\n" +
             "- a label specified by aria-label."
         );
+
+        mock.mockRestore();
       });
     });
 
@@ -87,28 +92,124 @@ describe("<Dialog />", () => {
   });
 
   describe("keyboard interaction", () => {
-    describe("tab", () => {
-      it.todo("moves focus to the next tabbable element inside the dialog.");
-
-      it.todo(
-        "if focus is on the last tabbable element inside the dialog, \
-        moves focus to the first tabbable element inside the dialog."
+    const setup = () => {
+      userEvent.setup();
+      render(
+        <Dialog aria-label="title">
+          <input data-testid="element" type="checkbox" />
+          <input data-testid="element" type="radio" />
+          <input data-testid="element" type="number" />
+        </Dialog>
       );
+    };
+
+    describe("dialog open", () => {
+      it("When a dialog opens, focus moves to an element contained in the dialog", () => {
+        setup();
+
+        const [checkbox] = screen.getAllByTestId("element");
+
+        expect(checkbox).toHaveFocus();
+      });
+    });
+
+    describe("tab", () => {
+      it("moves focus to the next tabbable element inside the dialog.", async () => {
+        setup();
+
+        const [checkbox, radio, number] = screen.getAllByTestId("element");
+
+        expect(checkbox).toHaveFocus();
+
+        await userEvent.keyboard("{Tab}");
+        expect(radio).toHaveFocus();
+
+        await userEvent.keyboard("{Tab}");
+        expect(number).toHaveFocus();
+
+        await userEvent.keyboard("{Tab}");
+        expect(checkbox).toHaveFocus();
+      });
+
+      it("if focus is on the last tabbable element inside the dialog, \
+        moves focus to the first tabbable element inside the dialog.", async () => {
+        setup();
+
+        const [checkbox, _, number] = screen.getAllByTestId("element");
+
+        number.focus();
+
+        expect(number).toHaveFocus();
+
+        await userEvent.keyboard("{Tab}");
+        expect(checkbox).toHaveFocus();
+      });
     });
 
     describe("shift + tab", () => {
-      it.todo(
-        "moves focus to the previous tabbable element inside the dialog."
-      );
+      it("moves focus to the previous tabbable element inside the dialog.", async () => {
+        setup();
 
-      it.todo(
-        "if focus is on the first tabbable element inside the dialog, \
-        moves focus to the last tabbable element inside the dialog."
-      );
+        const [checkbox, radio, number] = screen.getAllByTestId("element");
+
+        expect(checkbox).toHaveFocus();
+
+        await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(number).toHaveFocus();
+
+        await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(radio).toHaveFocus();
+
+        await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(checkbox).toHaveFocus();
+      });
+
+      it("if focus is on the first tabbable element inside the dialog, \
+        moves focus to the last tabbable element inside the dialog.", async () => {
+        setup();
+
+        const [checkbox, _, number] = screen.getAllByTestId("element");
+
+        checkbox.focus();
+
+        expect(checkbox).toHaveFocus();
+
+        await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(number).toHaveFocus();
+      });
     });
 
     describe("escape", () => {
-      it.todo("closes the dialog.");
+      const Comp = () => {
+        const [open, setOpen] = useState(true);
+
+        if (!open) return null;
+
+        return (
+          <Dialog
+            data-testid="dialog"
+            aria-label="title"
+            onDismiss={() => setOpen(false)}
+          >
+            <input data-testid="element" type="checkbox" />
+            <input data-testid="element" type="radio" />
+            <input data-testid="element" type="number" />
+          </Dialog>
+        );
+      };
+
+      it("closes the dialog.", async () => {
+        userEvent.setup();
+        render(<Comp />);
+
+        const dialog = screen.getByTestId("dialog");
+
+        expect(dialog).toBeInTheDocument();
+
+        await userEvent.keyboard("{Esc}");
+
+        expect(dialog).not.toBeInTheDocument();
+      });
     });
   });
 });
