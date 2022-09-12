@@ -3,6 +3,8 @@ import {
   cloneElement,
   ComponentProps,
   isValidElement,
+  ReactNode,
+  RefObject,
   useEffect,
   useId,
   useRef,
@@ -19,24 +21,42 @@ function Title(props: TitleProps) {
   return <h2 {...props} />;
 }
 
-async function focus(node?: HTMLElement | null, defer?: boolean) {
-  if (defer) {
-    return Promise.resolve().then(() => node?.focus());
+type BackdropProps = ComponentProps<"div">;
+function Backdrop(props: BackdropProps) {
+  if (props.children) {
+    return <div {...props}>{props.children}</div>;
   }
 
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backdropFilter: "brightness(30%)",
+      }}
+      {...props}
+    />
+  );
+}
+
+function focus(node?: HTMLElement | null) {
   return node?.focus();
 }
 
+const IS_TEST_ENV = process.env.NODE_ENV !== "test";
+
 type DialogProps = ComponentProps<"div"> & {
-  onDismiss?: (event: KeyboardEvent) => void;
+  onDismiss?: () => void;
+  initialFocusRef?: RefObject<HTMLElement>;
 };
 export function Dialog(_props: DialogProps) {
-  const { children, onDismiss, ...props } = _props;
+  const { children, onDismiss, initialFocusRef, ...props } = _props;
 
   const id = useId();
 
   let labelledby: string | undefined = undefined;
   let describedby: string | undefined = undefined;
+  let backdrop: ReactNode | undefined = undefined;
   Children.forEach(children, (element) => {
     if (!isValidElement(element)) return;
 
@@ -45,6 +65,13 @@ export function Dialog(_props: DialogProps) {
     }
     if (element.type === Description) {
       describedby = id + "description";
+    }
+    if (element.type === Backdrop) {
+      const onClick = () => {
+        element.props.onClick?.();
+        onDismiss?.();
+      };
+      backdrop = cloneElement(element, { ...element.props, onClick });
     }
   });
 
@@ -56,68 +83,84 @@ export function Dialog(_props: DialogProps) {
     );
   }
 
+  const lastFocus = useRef(0);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
 
     const tabbables = tabbable(element, {
-      displayCheck: process.env.NODE_ENV !== "test",
+      displayCheck: IS_TEST_ENV,
     }) as HTMLElement[];
 
-    focus(tabbables.at(0));
+    focus(initialFocusRef?.current ?? tabbables.at(lastFocus.current));
 
     function onKeyDown(event: KeyboardEvent) {
       if (!(document.activeElement instanceof HTMLElement)) return;
+      if (!element?.contains(document.activeElement)) return;
 
       const index = tabbables.indexOf(document.activeElement);
       const { key, shiftKey } = event;
 
       if (shiftKey && key === "Tab") {
-        return focus(tabbables.at((index - 1) % tabbables.length), true);
+        event.preventDefault();
+
+        const nextFocusIndex = (index - 1) % tabbables.length;
+        lastFocus.current = nextFocusIndex;
+        return focus(tabbables.at(nextFocusIndex));
       }
       if (key === "Tab") {
-        return focus(tabbables.at((index + 1) % tabbables.length), true);
-      }
+        event.preventDefault();
 
-      if (key === "Esc") {
-        return onDismiss?.(event);
+        const nextFocusIndex = (index + 1) % tabbables.length;
+        lastFocus.current = nextFocusIndex;
+        return focus(tabbables.at(nextFocusIndex));
+      }
+      if (key === "Escape") {
+        event.preventDefault();
+        return onDismiss?.();
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
-
     return () => void window.removeEventListener("keydown", onKeyDown);
-  }, [ref.current, onDismiss]);
+  }, [ref.current, initialFocusRef?.current, lastFocus.current, onDismiss]);
 
   return (
-    <div
-      {...props}
-      aria-modal="true"
-      role="dialog"
-      aria-labelledby={labelledby}
-      aria-describedby={describedby}
-      ref={ref}
-    >
-      {Children.map(children, (element) => {
-        if (isValidElement(element)) {
-          let id = undefined;
+    <>
+      {backdrop ?? <Backdrop onClick={onDismiss} />}
+      <div
+        {...props}
+        aria-modal="true"
+        role="dialog"
+        aria-labelledby={labelledby}
+        aria-describedby={describedby}
+        ref={ref}
+      >
+        {Children.map(children, (element) => {
+          if (isValidElement(element)) {
+            let id = undefined;
 
-          if (element.type === Title) {
-            id = labelledby;
+            if (element.type === Title) {
+              id = labelledby;
+            }
+            if (element.type === Description) {
+              id = describedby;
+            }
+            if (element.type === Backdrop) {
+              return;
+            }
+
+            return cloneElement(element, { ...element.props, id });
           }
-          if (element.type === Description) {
-            id = describedby;
-          }
 
-          return cloneElement(element, { ...element.props, id });
-        }
-
-        return element;
-      })}
-    </div>
+          return element;
+        })}
+      </div>
+    </>
   );
 }
 
 Dialog.Title = Title;
 Dialog.Description = Description;
+Dialog.Backdrop = Backdrop;
