@@ -18,9 +18,9 @@ describe("<MonthCalendar />", () => {
       ["Sa", "Saturday"],
     ])("the day %s in the column headers", (name, abbr) => {
       render(
-        <MonthCalendar.Table>
+        <MonthCalendar.Grid>
           <MonthCalendar.ColumnHeader />
-        </MonthCalendar.Table>
+        </MonthCalendar.Grid>
       );
 
       const el = screen.getByRole("columnheader", { name });
@@ -31,7 +31,7 @@ describe("<MonthCalendar />", () => {
 
   describe("Date Grid", () => {
     it("identifies the table element as a grid widget", () => {
-      render(<MonthCalendar.Table />);
+      render(<MonthCalendar.Grid />);
 
       expect(screen.getByRole("grid")).toBeInTheDocument();
     });
@@ -39,9 +39,9 @@ describe("<MonthCalendar />", () => {
     describe("if focus on january 1970", () => {
       it("should render days in month correctly", () => {
         render(
-          <MonthCalendar.Table focus={new Date(0)}>
+          <MonthCalendar.Grid focus={new Date(0)}>
             <MonthCalendar.GridCell />
-          </MonthCalendar.Table>
+          </MonthCalendar.Grid>
         );
 
         eachDayOfInterval({
@@ -56,9 +56,9 @@ describe("<MonthCalendar />", () => {
 
       it("first day should thursday", () => {
         render(
-          <MonthCalendar.Table focus={new Date(0)}>
+          <MonthCalendar.Grid focus={new Date(0)}>
             <MonthCalendar.GridCell />
-          </MonthCalendar.Table>
+          </MonthCalendar.Grid>
         );
 
         expect(screen.getAllByRole(/(grid)?cell/).at(4))
@@ -69,9 +69,9 @@ describe("<MonthCalendar />", () => {
       it("change focus to february 1970, first day should be sunday", () => {
         const first = new Date(0);
         const { rerender } = render(
-          <MonthCalendar.Table focus={first}>
+          <MonthCalendar.Grid focus={first}>
             <MonthCalendar.GridCell />
-          </MonthCalendar.Table>
+          </MonthCalendar.Grid>
         );
         expect(screen.getAllByRole(/(grid)?cell/).at(4))
           //
@@ -79,9 +79,9 @@ describe("<MonthCalendar />", () => {
 
         const second = add(new Date(0), { months: 1 });
         rerender(
-          <MonthCalendar.Table focus={second}>
+          <MonthCalendar.Grid focus={second}>
             <MonthCalendar.GridCell />
-          </MonthCalendar.Table>
+          </MonthCalendar.Grid>
         );
         expect(screen.getAllByRole(/(grid)?cell/).at(0))
           //
@@ -92,9 +92,9 @@ describe("<MonthCalendar />", () => {
     describe("makes the cell focusable, and implement roving tabindex", () => {
       it(`set tabindex="0" on the element that will initially be included in the tab sequence`, () => {
         render(
-          <MonthCalendar.Table focus={new Date(0)}>
+          <MonthCalendar.Grid focus={new Date(0)}>
             <MonthCalendar.GridCell />
-          </MonthCalendar.Table>
+          </MonthCalendar.Grid>
         );
 
         expect(
@@ -106,9 +106,9 @@ describe("<MonthCalendar />", () => {
 
       it(`set tabindex="-1" on all other focusable elements it contains`, () => {
         render(
-          <MonthCalendar.Table focus={new Date(0)}>
+          <MonthCalendar.Grid focus={new Date(0)}>
             <MonthCalendar.GridCell />
-          </MonthCalendar.Table>
+          </MonthCalendar.Grid>
         );
 
         expect(

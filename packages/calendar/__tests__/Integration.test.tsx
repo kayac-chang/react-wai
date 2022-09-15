@@ -21,11 +21,11 @@ describe("integration: calendar with monthcalendar", () => {
           <Calendar.Button action="next year">{">>"}</Calendar.Button>
         </Calendar.Header>
 
-        <MonthCalendar.Table>
+        <MonthCalendar.Grid>
           <MonthCalendar.ColumnHeader />
 
           <MonthCalendar.GridCell />
-        </MonthCalendar.Table>
+        </MonthCalendar.Grid>
       </Calendar>
     );
 

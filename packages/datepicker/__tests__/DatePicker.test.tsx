@@ -30,7 +30,7 @@ describe("<DatePicker />", () => {
           <Calendar.Button action="next year" />
         </Calendar.Header>
 
-        <MonthCalendar.Table
+        <MonthCalendar.Grid
           onFocusCapture={(event) =>
             setFocusWithinGrid(
               event.currentTarget.contains(document.activeElement)
@@ -47,7 +47,7 @@ describe("<DatePicker />", () => {
               </DatePicker.Button>
             )}
           </MonthCalendar.GridCell>
-        </MonthCalendar.Table>
+        </MonthCalendar.Grid>
 
         <span aria-live="polite">
           {focusWithinGrid && "Cursor keys can navigate dates"}

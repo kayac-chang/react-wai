@@ -111,10 +111,10 @@ const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
   );
 });
 
-export type TableProps = ComponentProps<"table"> & {
+export type GridProps = ComponentProps<"table"> & {
   focus?: Date;
 };
-const Table = forwardRef<HTMLTableElement, TableProps>((props, ref) => {
+const Grid = forwardRef<HTMLTableElement, GridProps>((props, ref) => {
   let columnheader: ReturnType<typeof ColumnHeader> | null = null;
   let gridcell: ReturnType<typeof GridCell> | null = null;
 
@@ -159,7 +159,7 @@ const Table = forwardRef<HTMLTableElement, TableProps>((props, ref) => {
 });
 
 export const MonthCalendar = {
-  Table,
+  Grid,
   ColumnHeader,
   GridCell,
 };
