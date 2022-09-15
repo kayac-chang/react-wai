@@ -1,5 +1,5 @@
 {
-  "name": "dialog",
+  "name": "datepicker",
   "version": "0.0.0",
   "main": "./index.tsx",
   "types": "./index.tsx",
@@ -12,9 +12,10 @@
     "eslint": "^7.32.0",
     "eslint-config-custom": "*",
     "tsconfig": "*",
-    "utils": "*"
+    "dialog": "*",
+    "calendar": "*"
   },
   "dependencies": {
-      "tabbable": "*"
+    "date-fns": "^2.29.3"
   }
 }

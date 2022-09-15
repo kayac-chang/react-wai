@@ -6,7 +6,7 @@ import { Calendar } from "../Calendar";
 import { MonthCalendar } from "../MonthCalendar";
 import { axe } from "vitest-axe";
 
-describe("Integration: Calendar with MonthCalendar", () => {
+describe("integration: calendar with monthcalendar", () => {
   const setup = () => {
     userEvent.setup();
     const { container } = render(
@@ -21,11 +21,11 @@ describe("Integration: Calendar with MonthCalendar", () => {
           <Calendar.Button action="next year">{">>"}</Calendar.Button>
         </Calendar.Header>
 
-        <MonthCalendar>
+        <MonthCalendar.Table>
           <MonthCalendar.ColumnHeader />
 
           <MonthCalendar.GridCell />
-        </MonthCalendar>
+        </MonthCalendar.Table>
       </Calendar>
     );
 
@@ -91,48 +91,48 @@ describe("Integration: Calendar with MonthCalendar", () => {
   });
 
   it(
-    "Sets focus on the same day of the same week." +
-      "If that day does not exist, then moves focus to the same day of the previous or next week.",
+    "sets focus on the same day of the same week." +
+      "if that day does not exist, then moves focus to the same day of the previous or next week.",
     async () => {
       const axe = setup();
 
       let index = screen
         .getAllByRole(/(grid)?cell/)
-        .findIndex((el) => el === document.activeElement);
+        .findIndex((el) => el.getAttribute("tabindex") === "0");
       expect(index % 7).toBe(4);
       expect(await axe()).toHaveNoViolations();
 
       await userEvent.keyboard("{PageDown}");
       index = screen
         .getAllByRole(/(grid)?cell/)
-        .findIndex((el) => el === document.activeElement);
+        .findIndex((el) => el.getAttribute("tabindex") === "0");
       expect(index % 7).toBe(0);
       expect(await axe()).toHaveNoViolations();
 
       await userEvent.keyboard("{PageUp}");
       index = screen
         .getAllByRole(/(grid)?cell/)
-        .findIndex((el) => el === document.activeElement);
+        .findIndex((el) => el.getAttribute("tabindex") === "0");
       expect(index % 7).toBe(4);
       expect(await axe()).toHaveNoViolations();
 
       await userEvent.keyboard("{Shift>}{PageDown}{/Shift}");
       index = screen
         .getAllByRole(/(grid)?cell/)
-        .findIndex((el) => el === document.activeElement);
+        .findIndex((el) => el.getAttribute("tabindex") === "0");
       expect(index % 7).toBe(5);
       expect(await axe()).toHaveNoViolations();
 
       await userEvent.keyboard("{Shift>}{PageUp}{/Shift}");
       index = screen
         .getAllByRole(/(grid)?cell/)
-        .findIndex((el) => el === document.activeElement);
+        .findIndex((el) => el.getAttribute("tabindex") === "0");
       expect(index % 7).toBe(4);
       expect(await axe()).toHaveNoViolations();
     }
   );
 
-  describe("When the component contains focus and the user presses a navigation key", () => {
+  describe("when the component contains focus and the user presses a navigation key", () => {
     it(`set tabindex="-1" on the element that has tabindex="0"`, async () => {
       const axe = setup();
 
@@ -207,45 +207,6 @@ describe("Integration: Calendar with MonthCalendar", () => {
       expect(getByText(format(current, "dd")))
         //
         .toHaveAttribute("tabindex", "0");
-      expect(await axe()).toHaveNoViolations();
-    });
-
-    it(`Set focus, element.focus(), on the element that has tabindex="0"`, async () => {
-      const axe = setup();
-
-      let current = new Date(0);
-      const getByText = screen.getByText;
-      expect(getByText(format(current, "dd"))).toHaveFocus();
-      expect(await axe()).toHaveNoViolations();
-
-      await userEvent.keyboard("[ArrowDown]");
-      current = add(current, { weeks: 1 });
-      expect(getByText(format(current, "dd"))).toHaveFocus();
-      expect(await axe()).toHaveNoViolations();
-
-      await userEvent.keyboard("[ArrowUp]");
-      current = sub(current, { weeks: 1 });
-      expect(getByText(format(current, "dd"))).toHaveFocus();
-      expect(await axe()).toHaveNoViolations();
-
-      await userEvent.keyboard("[ArrowLeft]");
-      current = sub(current, { days: 1 });
-      expect(getByText(format(current, "dd"))).toHaveFocus();
-      expect(await axe()).toHaveNoViolations();
-
-      await userEvent.keyboard("[ArrowRight]");
-      current = add(current, { days: 1 });
-      expect(getByText(format(current, "dd"))).toHaveFocus();
-      expect(await axe()).toHaveNoViolations();
-
-      await userEvent.keyboard("[Home]");
-      current = startOfWeek(current);
-      expect(getByText(format(current, "dd"))).toHaveFocus();
-      expect(await axe()).toHaveNoViolations();
-
-      await userEvent.keyboard("[End]");
-      current = endOfWeek(current);
-      expect(getByText(format(current, "dd"))).toHaveFocus();
       expect(await axe()).toHaveNoViolations();
     });
   });

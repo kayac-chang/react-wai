@@ -2,23 +2,46 @@ import {
   Children,
   cloneElement,
   ComponentProps,
+  createContext,
+  ElementType,
   isValidElement,
   ReactNode,
   RefObject,
+  useContext,
   useEffect,
   useId,
   useRef,
 } from "react";
 import { tabbable } from "tabbable";
+import type { PCP } from "utils/types";
 
-type DescriptionProps = ComponentProps<"div">;
-function Description(props: DescriptionProps) {
-  return <div {...props} />;
+type State = {
+  labelledby: string;
+  describedby: string;
+};
+const Context = createContext<State | null>(null);
+function useDialogContext(message?: string) {
+  const context = useContext(Context);
+  if (!context) {
+    throw new Error(message);
+  }
+  return context;
 }
 
-type TitleProps = ComponentProps<"h2">;
-function Title(props: TitleProps) {
-  return <h2 {...props} />;
+function Description<E extends ElementType>(props: PCP<E, {}>) {
+  const context = useDialogContext(
+    `<Dialog.Description> cannot be rendered outside <Dialog />`
+  );
+  const Comp = props.as ?? "div";
+  return <Comp id={context.describedby} {...props} />;
+}
+
+function Title<E extends ElementType>(props: PCP<E, {}>) {
+  const context = useDialogContext(
+    `<Dialog.Title> cannot be rendered outside <Dialog />`
+  );
+  const Comp = props.as ?? "h2";
+  return <Comp id={context.labelledby} {...props} />;
 }
 
 type BackdropProps = ComponentProps<"div">;
@@ -48,24 +71,23 @@ const IS_TEST_ENV = process.env.NODE_ENV !== "test";
 type DialogProps = ComponentProps<"div"> & {
   onDismiss?: () => void;
   initialFocusRef?: RefObject<HTMLElement>;
+  autoFocus?: boolean;
+  onFocusChange?: () => void;
 };
 export function Dialog(_props: DialogProps) {
-  const { children, onDismiss, initialFocusRef, ...props } = _props;
+  const {
+    children,
+    onDismiss,
+    initialFocusRef,
+    autoFocus = true,
+    onFocusChange,
+    ...props
+  } = _props;
 
-  const id = useId();
-
-  let labelledby: string | undefined = undefined;
-  let describedby: string | undefined = undefined;
   let backdrop: ReactNode | undefined = undefined;
   Children.forEach(children, (element) => {
     if (!isValidElement(element)) return;
 
-    if (element.type === Title) {
-      labelledby = id + "label";
-    }
-    if (element.type === Description) {
-      describedby = id + "description";
-    }
     if (element.type === Backdrop) {
       const onClick = () => {
         element.props.onClick?.();
@@ -74,14 +96,6 @@ export function Dialog(_props: DialogProps) {
       backdrop = cloneElement(element, { ...element.props, onClick });
     }
   });
-
-  if (!labelledby && !props["aria-label"]) {
-    throw new Error(
-      "dialog should has either: \n" +
-        "- a value set for the aria-labelledby property that refers to a visible dialog title.\n" +
-        "- a label specified by aria-label."
-    );
-  }
 
   const lastFocus = useRef(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -93,7 +107,11 @@ export function Dialog(_props: DialogProps) {
       displayCheck: IS_TEST_ENV,
     }) as HTMLElement[];
 
-    focus(initialFocusRef?.current ?? tabbables.at(lastFocus.current));
+    if (autoFocus) {
+      focus(initialFocusRef?.current ?? tabbables.at(lastFocus.current));
+    } else {
+      focus(initialFocusRef?.current);
+    }
 
     function onKeyDown(event: KeyboardEvent) {
       if (!(document.activeElement instanceof HTMLElement)) return;
@@ -124,40 +142,34 @@ export function Dialog(_props: DialogProps) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => void window.removeEventListener("keydown", onKeyDown);
-  }, [ref.current, initialFocusRef?.current, lastFocus.current, onDismiss]);
+  }, [ref.current, initialFocusRef?.current, lastFocus.current, autoFocus]);
+
+  const id = useId();
+  const context = {
+    labelledby: id + "labelledby",
+    describedby: id + "describedby",
+  };
 
   return (
-    <>
+    <Context.Provider value={context}>
       {backdrop ?? <Backdrop onClick={onDismiss} />}
       <div
         {...props}
         aria-modal="true"
         role="dialog"
-        aria-labelledby={labelledby}
-        aria-describedby={describedby}
+        aria-labelledby={props["aria-label"] ? undefined : context.labelledby}
+        aria-describedby={context.describedby}
         ref={ref}
       >
         {Children.map(children, (element) => {
-          if (isValidElement(element)) {
-            let id = undefined;
-
-            if (element.type === Title) {
-              id = labelledby;
-            }
-            if (element.type === Description) {
-              id = describedby;
-            }
-            if (element.type === Backdrop) {
-              return;
-            }
-
-            return cloneElement(element, { ...element.props, id });
+          if (isValidElement(element) && element.type === Backdrop) {
+            return;
           }
 
           return element;
         })}
       </div>
-    </>
+    </Context.Provider>
   );
 }
 

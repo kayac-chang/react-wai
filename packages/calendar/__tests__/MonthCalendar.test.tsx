@@ -7,7 +7,7 @@ import { MonthCalendar } from "../MonthCalendar";
 import { add, eachDayOfInterval, endOfMonth, format } from "date-fns";
 
 describe("<MonthCalendar />", () => {
-  describe("WeekDay Header", () => {
+  describe("weekday header", () => {
     it.each([
       ["Su", "Sunday"],
       ["Mo", "Monday"],
@@ -18,9 +18,9 @@ describe("<MonthCalendar />", () => {
       ["Sa", "Saturday"],
     ])("the day %s in the column headers", (name, abbr) => {
       render(
-        <MonthCalendar>
+        <MonthCalendar.Table>
           <MonthCalendar.ColumnHeader />
-        </MonthCalendar>
+        </MonthCalendar.Table>
       );
 
       const el = screen.getByRole("columnheader", { name });
@@ -30,34 +30,35 @@ describe("<MonthCalendar />", () => {
   });
 
   describe("Date Grid", () => {
-    //
-    it("Identifies the table element as a grid widget.", () => {
-      render(<MonthCalendar />);
+    it("identifies the table element as a grid widget", () => {
+      render(<MonthCalendar.Table />);
 
       expect(screen.getByRole("grid")).toBeInTheDocument();
     });
 
-    describe("If focus on January 1970", () => {
-      it("Should render days in month correctly", () => {
-        const { container } = render(
-          <MonthCalendar focus={new Date(0)}>
+    describe("if focus on january 1970", () => {
+      it("should render days in month correctly", () => {
+        render(
+          <MonthCalendar.Table focus={new Date(0)}>
             <MonthCalendar.GridCell />
-          </MonthCalendar>
+          </MonthCalendar.Table>
         );
 
         eachDayOfInterval({
           start: new Date(0),
           end: endOfMonth(new Date(0)),
         }).forEach((day) =>
-          expect(container).toHaveTextContent(RegExp(format(day, "dd")))
+          expect(
+            screen.queryByText(RegExp(format(day, "dd")))
+          ).toBeInTheDocument()
         );
       });
 
-      it("the first day should Thursday", () => {
+      it("first day should thursday", () => {
         render(
-          <MonthCalendar focus={new Date(0)}>
+          <MonthCalendar.Table focus={new Date(0)}>
             <MonthCalendar.GridCell />
-          </MonthCalendar>
+          </MonthCalendar.Table>
         );
 
         expect(screen.getAllByRole(/(grid)?cell/).at(4))
@@ -65,12 +66,12 @@ describe("<MonthCalendar />", () => {
           .toHaveTextContent("01");
       });
 
-      it("If focus on January 1970 first, then change focus to February 1970", () => {
+      it("change focus to february 1970, first day should be sunday", () => {
         const first = new Date(0);
         const { rerender } = render(
-          <MonthCalendar focus={first}>
+          <MonthCalendar.Table focus={first}>
             <MonthCalendar.GridCell />
-          </MonthCalendar>
+          </MonthCalendar.Table>
         );
         expect(screen.getAllByRole(/(grid)?cell/).at(4))
           //
@@ -78,9 +79,9 @@ describe("<MonthCalendar />", () => {
 
         const second = add(new Date(0), { months: 1 });
         rerender(
-          <MonthCalendar focus={second}>
+          <MonthCalendar.Table focus={second}>
             <MonthCalendar.GridCell />
-          </MonthCalendar>
+          </MonthCalendar.Table>
         );
         expect(screen.getAllByRole(/(grid)?cell/).at(0))
           //
@@ -88,52 +89,33 @@ describe("<MonthCalendar />", () => {
       });
     });
 
-    describe("Makes the cell focusable, and implement Roving tabindex", () => {
-      //
-      describe("When the component container is loaded or created", () => {
-        it("If focus is January 1970, should be focus on January 1970", () => {
-          render(
-            <MonthCalendar focus={new Date(0)}>
-              <MonthCalendar.GridCell />
-            </MonthCalendar>
-          );
+    describe("makes the cell focusable, and implement roving tabindex", () => {
+      it(`set tabindex="0" on the element that will initially be included in the tab sequence`, () => {
+        render(
+          <MonthCalendar.Table focus={new Date(0)}>
+            <MonthCalendar.GridCell />
+          </MonthCalendar.Table>
+        );
 
-          expect(document.activeElement)
-            //
-            .toHaveTextContent("01");
-        });
+        expect(
+          screen
+            .queryAllByRole(/(grid)?cell/)
+            .filter((element) => element.getAttribute("tabindex") === "0")
+        ).toHaveLength(1);
+      });
 
-        it("Default focus on today", () => {
-          render(
-            <MonthCalendar>
-              <MonthCalendar.GridCell />
-            </MonthCalendar>
-          );
+      it(`set tabindex="-1" on all other focusable elements it contains`, () => {
+        render(
+          <MonthCalendar.Table focus={new Date(0)}>
+            <MonthCalendar.GridCell />
+          </MonthCalendar.Table>
+        );
 
-          expect(document.activeElement)
-            //
-            .toHaveTextContent(RegExp(format(new Date(), "dd")));
-        });
-
-        it(`Set tabindex="0" on the element that will initially be included in the tab sequence`, () => {
-          render(
-            <MonthCalendar>
-              <MonthCalendar.GridCell />
-            </MonthCalendar>
-          );
-
-          expect(document.activeElement)
-            //
-            .toHaveAttribute("tabindex", "0");
-        });
-
-        it(`Set tabindex="-1" on all other focusable elements it contains.`, () => {
-          Array.from(
-            render(<MonthCalendar />).container.querySelectorAll(`[tabindex]`)
-          )
-            .filter((el) => el !== document.activeElement)
-            .forEach((el) => expect(el).toHaveAttribute("tabindex", "-1"));
-        });
+        expect(
+          screen
+            .queryAllByRole(/(grid)?cell/)
+            .filter((element) => element.getAttribute("tabindex") === "-1")
+        ).toHaveLength(34);
       });
     });
   });

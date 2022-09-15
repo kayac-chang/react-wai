@@ -15,14 +15,14 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "@testing-library/cypress": "^8.0.3",
-    "@testing-library/dom": "^8.17.1",
+    "@testing-library/cypress": "latest",
+    "@testing-library/dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@types/ramda": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@types/testing-library__cypress": "^5.0.9",
+    "@types/testing-library__cypress": "latest",
     "eslint-config-custom": "*",
     "jsdom": "latest",
     "prettier": "latest",

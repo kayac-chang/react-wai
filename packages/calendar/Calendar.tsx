@@ -4,10 +4,11 @@ import {
   MouseEvent,
   useContext,
   useEffect,
+  useId,
   useReducer,
 } from "react";
 import type { Dispatch, ElementType } from "react";
-import type { PCP } from "./utils/type";
+import type { PCP } from "utils/types";
 
 type Control = "previous" | "next" | "start of" | "end of";
 type Unit = "year" | "month" | "week" | "day";
@@ -84,15 +85,14 @@ const keymap =
 interface State {
   focus: Date;
   dispatch: Dispatch<Action>;
+  grid_label: string;
 }
 export const Context = createContext<State | null>(null);
 function useCalendarContext(error: string) {
   const context = useContext(Context);
-
   if (!context) {
     throw new Error(error);
   }
-
   return context;
 }
 
@@ -126,9 +126,8 @@ function Button(props: ButtonProps) {
   );
 }
 
-type Level = 1 | 2 | 3 | 4 | 5 | 6;
-export type TitleProps<E extends `h${Level}`> = PCP<E, {}>;
-function Title<E extends `h${Level}`>(props: TitleProps<E>) {
+export type TitleProps<E extends ElementType> = PCP<E, {}>;
+function Title<E extends ElementType>(props: TitleProps<E>) {
   const context = useCalendarContext(
     `<Calendar.Title /> cannot be rendered outside <Calendar />`
   );
@@ -137,7 +136,11 @@ function Title<E extends `h${Level}`>(props: TitleProps<E>) {
   const Comp = as ?? "h2";
   const children = props.children ?? format(context.focus, "MMMM yyyy");
 
-  return <Comp aria-live="polite" {...rest} children={children} />;
+  return (
+    <Comp {...rest} aria-live="polite" id={context.grid_label}>
+      {children}
+    </Comp>
+  );
 }
 
 type _CalendarProps = { value?: Date };
@@ -149,21 +152,26 @@ export function Calendar<E extends ElementType = "div">(
   props: CalendarProps<E>
 ) {
   const { value, as, ...rest } = props;
-
   const Comp = as ?? "div";
 
   const [focus, dispatch] = useReducer(reducer, value ?? new Date());
   useEffect(() => {
     const keydown = keymap(dispatch);
-
     window.addEventListener("keydown", keydown);
     return () => {
       window.removeEventListener("keydown", keydown);
     };
   }, [dispatch]);
 
+  const id = useId();
+  const context = {
+    focus,
+    dispatch,
+    grid_label: id + "grid-label",
+  };
+
   return (
-    <Context.Provider value={{ focus, dispatch }}>
+    <Context.Provider value={context}>
       <Comp {...rest} />
     </Context.Provider>
   );

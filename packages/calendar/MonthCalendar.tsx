@@ -2,11 +2,11 @@ import {
   eachDayOfInterval,
   endOfMonth,
   getDay,
-  isSameDay,
   startOfMonth,
   format,
   startOfWeek,
   add,
+  isSameDay,
 } from "date-fns";
 import { concat, range, repeat, splitEvery } from "ramda";
 import {
@@ -14,28 +14,19 @@ import {
   cloneElement,
   ComponentProps,
   createContext,
+  forwardRef,
   isValidElement,
   useContext,
 } from "react";
 import { Context as CalendarContext } from "./Calendar";
 import type { ReactNode } from "react";
-import type { EP } from "./utils/type";
+import type { EP } from "utils/types";
 
 const getDatesInMonth = (focusOn: Date) =>
   eachDayOfInterval({
     start: startOfMonth(focusOn),
     end: endOfMonth(focusOn),
   });
-
-const focus = (isFocus: boolean) =>
-  isFocus
-    ? {
-        tabIndex: 0,
-        ref: (el: HTMLElement | null) => el?.focus(),
-      }
-    : {
-        tabIndex: -1,
-      };
 
 interface State {
   focus: Date;
@@ -44,11 +35,9 @@ interface State {
 const Context = createContext<State | null>(null);
 function useMonthCalendarContext(error: string) {
   const context = useContext(Context);
-
   if (!context) {
     throw new Error(error);
   }
-
   return context;
 }
 
@@ -83,53 +72,49 @@ type _GridCellProps = {
   children?: (date: Date) => ReactNode;
 };
 export type GridCellProps = EP<"td", _GridCellProps>;
-function GridCell(props: GridCellProps) {
+const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
   const context = useMonthCalendarContext(
     `<GridCell /> cannot be rendered outside <MonthCalendar />`
   );
-
-  const { table, focus: focusOn } = context;
+  const { children, ...props } = _props;
 
   return (
     <>
-      {table.map((row, index) => (
+      {context.table.map((row, index) => (
         <tr key={index}>
           {row.map((day, index) => {
-            const element = day && props.children?.(day);
+            if (!day) {
+              return <td key={index} {...props} tabIndex={-1} />;
+            }
 
-            // if child is valid react element, pass focus to the child
-            if (isValidElement<{}>(element)) {
+            const element = children?.(day);
+            const tabIndex = isSameDay(day, context.focus) ? 0 : -1;
+            const ref = isSameDay(day, context.focus) ? _ref : undefined;
+
+            if (isValidElement(element)) {
               return (
-                <td
-                  key={index}
-                  {...props}
-                  children={cloneElement(element, {
-                    ...element.props,
-                    ...focus(Boolean(day && isSameDay(day, focusOn))),
-                  })}
-                />
+                <td key={index} {...props}>
+                  {cloneElement(element, { ...element.props, tabIndex, ref })}
+                </td>
               );
             }
 
             return (
-              <td
-                key={index}
-                {...props}
-                {...focus(Boolean(day && isSameDay(day, focusOn)))}
-                children={element || (day && format(day, "dd"))}
-              />
+              <td key={index} {...props} tabIndex={tabIndex} ref={undefined}>
+                {format(day, "dd")}
+              </td>
             );
           })}
         </tr>
       ))}
     </>
   );
-}
+});
 
-export type MonthCalendarProps = ComponentProps<"table"> & {
+export type TableProps = ComponentProps<"table"> & {
   focus?: Date;
 };
-export const MonthCalendar = (props: MonthCalendarProps) => {
+const Table = forwardRef<HTMLTableElement, TableProps>((props, ref) => {
   let columnheader: ReturnType<typeof ColumnHeader> | null = null;
   let gridcell: ReturnType<typeof GridCell> | null = null;
 
@@ -158,7 +143,12 @@ export const MonthCalendar = (props: MonthCalendarProps) => {
 
   return (
     <Context.Provider value={{ focus, table }}>
-      <table role="grid" {...rest}>
+      <table
+        role="grid"
+        {...rest}
+        ref={ref}
+        aria-labelledby={context?.grid_label}
+      >
         <thead role="rowgroup">
           <tr role="row">{columnheader}</tr>
         </thead>
@@ -166,7 +156,10 @@ export const MonthCalendar = (props: MonthCalendarProps) => {
       </table>
     </Context.Provider>
   );
-};
+});
 
-MonthCalendar.ColumnHeader = ColumnHeader;
-MonthCalendar.GridCell = GridCell;
+export const MonthCalendar = {
+  Table,
+  ColumnHeader,
+  GridCell,
+};
