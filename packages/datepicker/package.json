@@ -13,7 +13,8 @@
     "eslint-config-custom": "*",
     "tsconfig": "*",
     "dialog": "*",
-    "calendar": "*"
+    "calendar": "*",
+    "utils": "*"
   },
   "dependencies": {
     "date-fns": "^2.29.3"

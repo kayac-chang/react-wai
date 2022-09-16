@@ -10,14 +10,14 @@ import { useState } from "react";
 describe("<Dialog />", () => {
   describe("roles/states/properties", () => {
     it("the element that serves as the dialog container has a role of dialog.", () => {
-      render(<Dialog data-testid="a" aria-label="a" />);
+      render(<Dialog data-testid="a" />);
       expect(screen.getByTestId("a")).toHaveAttribute("role", "dialog");
     });
 
     it("all elements required to operate the dialog are descendants of the element that has role dialog.", () => {
       render(
-        <Dialog data-testid="a" aria-label="a">
-          <Dialog data-testid="b" aria-label="b" />
+        <Dialog data-testid="a">
+          <Dialog data-testid="b" />
         </Dialog>
       );
       expect(screen.getByTestId("a")).toHaveAttribute("role", "dialog");
@@ -25,7 +25,7 @@ describe("<Dialog />", () => {
     });
 
     it("the dialog container element has aria-modal set to true.", () => {
-      render(<Dialog data-testid="a" aria-label="a" />);
+      render(<Dialog data-testid="a" />);
       expect(screen.getByTestId("a")).toHaveAttribute("aria-modal", "true");
     });
 
@@ -57,25 +57,28 @@ describe("<Dialog />", () => {
       });
     });
 
-    it("optionally, the aria-describedby property is set on the element with the dialog role \
-      to indicate which element or elements in the dialog contain content \
-      that describes the primary purpose or message of the dialog.", () => {
-      render(
-        <Dialog aria-label="title">
-          <Dialog.Description data-testid="desc">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum at
-            obcaecati, aliquid modi deserunt reprehenderit maiores nulla soluta
-            itaque veritatis perspiciatis praesentium repellendus animi beatae
-            expedita temporibus. Eaque, quae facilis?
-          </Dialog.Description>
-        </Dialog>
-      );
+    it(
+      "optionally, the aria-describedby property is set on the element with the dialog role " +
+        "to indicate which element or elements in the dialog contain content " +
+        "that describes the primary purpose or message of the dialog.",
+      () => {
+        render(
+          <Dialog aria-label="title">
+            <Dialog.Description data-testid="desc">
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum
+              at obcaecati, aliquid modi deserunt reprehenderit maiores nulla
+              soluta itaque veritatis perspiciatis praesentium repellendus animi
+              beatae expedita temporibus. Eaque, quae facilis?
+            </Dialog.Description>
+          </Dialog>
+        );
 
-      expect(screen.getByRole("dialog")).toHaveAttribute(
-        "aria-describedby",
-        screen.getByTestId("desc").id
-      );
-    });
+        expect(screen.getByRole("dialog")).toHaveAttribute(
+          "aria-describedby",
+          screen.getByTestId("desc").id
+        );
+      }
+    );
   });
 
   describe("keyboard interaction", () => {
@@ -91,7 +94,7 @@ describe("<Dialog />", () => {
     };
 
     describe("dialog open", () => {
-      it("When a dialog opens, focus moves to an element contained in the dialog", () => {
+      it("when a dialog opens, focus moves to an element contained in the dialog", () => {
         setup();
         const [checkbox] = screen.getAllByTestId("element");
         expect(checkbox).toHaveFocus();
@@ -111,15 +114,18 @@ describe("<Dialog />", () => {
         expect(checkbox).toHaveFocus();
       });
 
-      it("if focus is on the last tabbable element inside the dialog, \
-        moves focus to the first tabbable element inside the dialog.", async () => {
-        setup();
-        const [checkbox, _, number] = screen.getAllByTestId("element");
-        number.focus();
-        expect(number).toHaveFocus();
-        await user.keyboard("{Tab}");
-        expect(checkbox).toHaveFocus();
-      });
+      it(
+        "if focus is on the last tabbable element inside the dialog, " +
+          "moves focus to the first tabbable element inside the dialog.",
+        async () => {
+          setup();
+          const [checkbox, _, number] = screen.getAllByTestId("element");
+          number.focus();
+          expect(number).toHaveFocus();
+          await user.keyboard("{Tab}");
+          expect(checkbox).toHaveFocus();
+        }
+      );
     });
 
     describe("shift + tab", () => {
@@ -135,15 +141,18 @@ describe("<Dialog />", () => {
         expect(checkbox).toHaveFocus();
       });
 
-      it("if focus is on the first tabbable element inside the dialog, \
-        moves focus to the last tabbable element inside the dialog.", async () => {
-        setup();
-        const [checkbox, _, number] = screen.getAllByTestId("element");
-        checkbox.focus();
-        expect(checkbox).toHaveFocus();
-        await user.keyboard("{Shift>}{Tab}{/Shift}");
-        expect(number).toHaveFocus();
-      });
+      it(
+        "if focus is on the first tabbable element inside the dialog, " +
+          "moves focus to the last tabbable element inside the dialog.",
+        async () => {
+          setup();
+          const [checkbox, _, number] = screen.getAllByTestId("element");
+          checkbox.focus();
+          expect(checkbox).toHaveFocus();
+          await user.keyboard("{Shift>}{Tab}{/Shift}");
+          expect(number).toHaveFocus();
+        }
+      );
     });
 
     describe("escape", () => {

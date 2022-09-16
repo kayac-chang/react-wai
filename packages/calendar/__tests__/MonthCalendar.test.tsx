@@ -38,15 +38,16 @@ describe("<MonthCalendar />", () => {
 
     describe("if focus on january 1970", () => {
       it("should render days in month correctly", () => {
+        const current = new Date(0);
         render(
-          <MonthCalendar.Grid focus={new Date(0)}>
+          <MonthCalendar.Grid focus={current}>
             <MonthCalendar.GridCell />
           </MonthCalendar.Grid>
         );
 
         eachDayOfInterval({
-          start: new Date(0),
-          end: endOfMonth(new Date(0)),
+          start: current,
+          end: endOfMonth(current),
         }).forEach((day) =>
           expect(
             screen.queryByText(RegExp(format(day, "dd")))
@@ -77,7 +78,7 @@ describe("<MonthCalendar />", () => {
           //
           .toHaveTextContent("01");
 
-        const second = add(new Date(0), { months: 1 });
+        const second = add(first, { months: 1 });
         rerender(
           <MonthCalendar.Grid focus={second}>
             <MonthCalendar.GridCell />

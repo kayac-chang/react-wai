@@ -72,7 +72,6 @@ type DialogProps = ComponentProps<"div"> & {
   onDismiss?: () => void;
   initialFocusRef?: RefObject<HTMLElement>;
   autoFocus?: boolean;
-  onFocusChange?: () => void;
 };
 export function Dialog(_props: DialogProps) {
   const {
@@ -80,7 +79,6 @@ export function Dialog(_props: DialogProps) {
     onDismiss,
     initialFocusRef,
     autoFocus = true,
-    onFocusChange,
     ...props
   } = _props;
 

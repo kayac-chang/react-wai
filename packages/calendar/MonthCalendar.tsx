@@ -16,16 +16,17 @@ import {
   createContext,
   forwardRef,
   isValidElement,
+  RefObject,
   useContext,
 } from "react";
 import { Context as CalendarContext } from "./Calendar";
 import type { ReactNode } from "react";
 import type { EP } from "utils/types";
 
-const getDatesInMonth = (focusOn: Date) =>
+const getDatesInMonth = (focus: Date) =>
   eachDayOfInterval({
-    start: startOfMonth(focusOn),
-    end: endOfMonth(focusOn),
+    start: startOfMonth(focus),
+    end: endOfMonth(focus),
   });
 
 interface State {
@@ -68,10 +69,12 @@ function ColumnHeader(props: ColumnHeaderProps) {
   );
 }
 
-type _GridCellProps = {
-  children?: (date: Date) => ReactNode;
-};
-export type GridCellProps = EP<"td", _GridCellProps>;
+export type GridCellProps = EP<
+  "td",
+  {
+    children?: (date: Date) => ReactNode;
+  }
+>;
 const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
   const context = useMonthCalendarContext(
     `<GridCell /> cannot be rendered outside <MonthCalendar />`
@@ -100,7 +103,12 @@ const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
             }
 
             return (
-              <td key={index} {...props} tabIndex={tabIndex} ref={undefined}>
+              <td
+                key={index}
+                {...props}
+                tabIndex={tabIndex}
+                ref={ref as RefObject<HTMLTableCellElement>}
+              >
                 {format(day, "dd")}
               </td>
             );
@@ -144,8 +152,8 @@ const Grid = forwardRef<HTMLTableElement, GridProps>((props, ref) => {
   return (
     <Context.Provider value={{ focus, table }}>
       <table
-        role="grid"
         {...rest}
+        role="grid"
         ref={ref}
         aria-labelledby={context?.grid_label}
       >

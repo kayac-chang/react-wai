@@ -10,6 +10,7 @@ import {
   useId,
   useReducer,
 } from "react";
+import { PCP } from "utils/types";
 
 type Action =
   | { type: "trigger calendar" }
@@ -37,10 +38,13 @@ function useDatePickerContext(error: string) {
   return context;
 }
 
-type ButtonProps = Omit<ComponentProps<"button">, "children"> & {
-  children?: ReactNode | ((state: State) => ReactNode);
-  action: Action;
-};
+export type ButtonProps = PCP<
+  "button",
+  {
+    children?: ReactNode | ((state: State) => ReactNode);
+    action: Action;
+  }
+>;
 const Button = forwardRef<HTMLButtonElement, ButtonProps>((_props, ref) => {
   const [state, dispatch] = useDatePickerContext(
     `<DatePicker.Button /> cannot be rendered outside <DatePicker />`
@@ -83,7 +87,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((_props, ref) => {
 type DescriptionProps = ComponentProps<"span">;
 function Description(props: DescriptionProps) {
   const [{ input_describe }] = useDatePickerContext(
-    `<DatePicker.Field /> cannot be rendered outside <DatePicker />`
+    `<DatePicker.Description /> cannot be rendered outside <DatePicker />`
   );
 
   return <span id={input_describe} {...props} />;
@@ -98,13 +102,15 @@ function Field(props: FieldProps) {
   return <input type="text" aria-describedby={input_describe} {...props} />;
 }
 
-type DatePickerProps = Omit<ComponentProps<"div">, "children"> & {
-  value?: Date;
-  children: (ReactNode | ((state: State) => ReactNode))[];
-};
+type DatePickerProps = PCP<
+  "div",
+  {
+    value?: Date;
+    children: (ReactNode | ((state: State) => ReactNode))[];
+  }
+>;
 export function DatePicker(props: DatePickerProps) {
   const id = useId();
-
   const context = useReducer(reducer, {
     input_describe: id + "input_describe",
     open: false,
