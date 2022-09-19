@@ -93,6 +93,10 @@ const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
   );
   const { children, ...props } = _props;
 
+  const isFocusWithinTable = context.ref?.current?.contains(
+    document.activeElement
+  );
+
   return (
     <>
       {context.table.map((row, index) => (
@@ -104,10 +108,6 @@ const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
 
             const element = children?.(day);
             const tabIndex = isSameDay(day, context.focus) ? 0 : -1;
-
-            const isFocusWithinTable = context.ref?.current?.contains(
-              document.activeElement
-            );
             const ref = isSameDay(day, context.focus)
               ? (element: HTMLElement | null) => {
                   assignRef(_ref, element);
