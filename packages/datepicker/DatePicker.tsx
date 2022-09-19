@@ -1,19 +1,18 @@
 import { isSameDay } from "date-fns";
 import {
-  ComponentProps,
   createContext,
-  Dispatch,
   forwardRef,
-  Fragment,
-  ReactNode,
   useContext,
   useId,
   useReducer,
+  Fragment,
 } from "react";
-import { PCP } from "utils/types";
+import type { ComponentProps, Dispatch, KeyboardEvent, ReactNode } from "react";
+import type { PCP } from "utils/types";
 
 type Action =
   | { type: "trigger calendar" }
+  | { type: "close calendar" }
   | { type: "select date"; value: Date };
 type State = {
   open: boolean;
@@ -24,6 +23,9 @@ const Context = createContext<[State, Dispatch<Action>] | null>(null);
 function reducer(state: State, action: Action) {
   if (action.type === "trigger calendar") {
     return { ...state, open: !state.open };
+  }
+  if (action.type === "close calendar") {
+    return { ...state, open: false };
   }
   if (action.type === "select date") {
     return { ...state, value: action.value };
@@ -77,8 +79,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((_props, ref) => {
     );
   }
 
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Space") {
+      event.preventDefault();
+      return dispatch(action);
+    }
+  };
+
   return (
-    <button {...props} type="button" onClick={onClick} ref={ref}>
+    <button
+      {...props}
+      type="button"
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      ref={ref}
+    >
       {element}
     </button>
   );
@@ -89,24 +104,33 @@ function Description(props: DescriptionProps) {
   const [{ input_describe }] = useDatePickerContext(
     `<DatePicker.Description /> cannot be rendered outside <DatePicker />`
   );
-
   return <span id={input_describe} {...props} />;
 }
 
-type FieldProps = ComponentProps<"input">;
-function Field(props: FieldProps) {
-  const [{ input_describe }] = useDatePickerContext(
+type FieldProps = ComponentProps<"input"> & {
+  format: (value: Date) => string;
+};
+function Field(_props: FieldProps) {
+  const [state] = useDatePickerContext(
     `<DatePicker.Field /> cannot be rendered outside <DatePicker />`
   );
-
-  return <input type="text" aria-describedby={input_describe} {...props} />;
+  const { format, ...props } = _props;
+  return (
+    <input
+      value={state.value ? format?.(state.value) : ""}
+      onChange={() => {}}
+      type="text"
+      aria-describedby={state.input_describe}
+      {...props}
+    />
+  );
 }
 
 type DatePickerProps = PCP<
   "div",
   {
     value?: Date;
-    children: (ReactNode | ((state: State) => ReactNode))[];
+    children: (ReactNode | ((state: [State, Dispatch<Action>]) => ReactNode))[];
   }
 >;
 export function DatePicker(props: DatePickerProps) {
@@ -116,15 +140,13 @@ export function DatePicker(props: DatePickerProps) {
     open: false,
     value: props.value,
   });
-
   return (
     <Context.Provider value={context}>
       <div>
         {props.children?.map((element, index) => {
           if (typeof element === "function") {
-            return <Fragment key={index}>{element(context[0])}</Fragment>;
+            return <Fragment key={index}>{element(context)}</Fragment>;
           }
-
           return <Fragment key={index}>{element}</Fragment>;
         })}
       </div>

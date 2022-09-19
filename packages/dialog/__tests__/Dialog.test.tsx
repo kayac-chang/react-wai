@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { Dialog } from "../Dialog";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 describe("<Dialog />", () => {
   describe("roles/states/properties", () => {
@@ -157,30 +157,43 @@ describe("<Dialog />", () => {
 
     describe("escape", () => {
       const Comp = () => {
-        const [open, setOpen] = useState(true);
-
-        if (!open) return null;
+        const ref = useRef(null);
+        const [open, setOpen] = useState(false);
 
         return (
-          <Dialog
-            data-testid="dialog"
-            aria-label="title"
-            onDismiss={() => setOpen(false)}
-          >
-            <input data-testid="element" type="checkbox" />
-            <input data-testid="element" type="radio" />
-            <input data-testid="element" type="number" />
-          </Dialog>
+          <>
+            <button ref={ref} onClick={() => setOpen(true)}>
+              Open Dialog
+            </button>
+
+            {open && (
+              <Dialog
+                data-testid="dialog"
+                aria-label="title"
+                previousFocusRef={ref}
+                onDismiss={() => setOpen(false)}
+              >
+                <input data-testid="element" type="checkbox" />
+                <input data-testid="element" type="radio" />
+                <input data-testid="element" type="number" />
+              </Dialog>
+            )}
+          </>
         );
       };
 
       it("closes the dialog.", async () => {
         user.setup();
         render(<Comp />);
+
+        const button = screen.getByRole("button");
+        await user.click(button);
         const dialog = screen.getByTestId("dialog");
         expect(dialog).toBeInTheDocument();
+
         await user.keyboard("{Escape}");
         expect(dialog).not.toBeInTheDocument();
+        expect(button).toHaveFocus();
       });
     });
   });

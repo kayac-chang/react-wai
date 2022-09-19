@@ -7,6 +7,7 @@ import {
   isValidElement,
   ReactNode,
   RefObject,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -71,16 +72,16 @@ const IS_TEST_ENV = process.env.NODE_ENV !== "test";
 type DialogProps = ComponentProps<"div"> & {
   onDismiss?: () => void;
   initialFocusRef?: RefObject<HTMLElement>;
-  autoFocus?: boolean;
+  previousFocusRef?: RefObject<HTMLElement>;
 };
 export function Dialog(_props: DialogProps) {
-  const {
-    children,
-    onDismiss,
-    initialFocusRef,
-    autoFocus = true,
-    ...props
-  } = _props;
+  const { children, onDismiss, initialFocusRef, previousFocusRef, ...props } =
+    _props;
+
+  const onClose = useCallback(() => {
+    onDismiss?.();
+    focus(previousFocusRef?.current);
+  }, [onDismiss, previousFocusRef?.current]);
 
   let backdrop: ReactNode | undefined = undefined;
   Children.forEach(children, (element) => {
@@ -89,13 +90,12 @@ export function Dialog(_props: DialogProps) {
     if (element.type === Backdrop) {
       const onClick = () => {
         element.props.onClick?.();
-        onDismiss?.();
+        onClose();
       };
       backdrop = cloneElement(element, { ...element.props, onClick });
     }
   });
 
-  const lastFocus = useRef(0);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -105,10 +105,8 @@ export function Dialog(_props: DialogProps) {
       displayCheck: IS_TEST_ENV,
     }) as HTMLElement[];
 
-    if (autoFocus) {
-      focus(initialFocusRef?.current ?? tabbables.at(lastFocus.current));
-    } else {
-      focus(initialFocusRef?.current);
+    if (!element.contains(document.activeElement)) {
+      focus(initialFocusRef?.current ?? tabbables.at(0));
     }
 
     function onKeyDown(event: KeyboardEvent) {
@@ -120,27 +118,23 @@ export function Dialog(_props: DialogProps) {
 
       if (shiftKey && key === "Tab") {
         event.preventDefault();
-
         const nextFocusIndex = (index - 1) % tabbables.length;
-        lastFocus.current = nextFocusIndex;
         return focus(tabbables.at(nextFocusIndex));
       }
       if (key === "Tab") {
         event.preventDefault();
-
         const nextFocusIndex = (index + 1) % tabbables.length;
-        lastFocus.current = nextFocusIndex;
         return focus(tabbables.at(nextFocusIndex));
       }
       if (key === "Escape") {
         event.preventDefault();
-        return onDismiss?.();
+        return onClose();
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => void window.removeEventListener("keydown", onKeyDown);
-  }, [ref.current, initialFocusRef?.current, lastFocus.current, autoFocus]);
+  }, [ref.current, initialFocusRef?.current, onClose]);
 
   const id = useId();
   const context = {

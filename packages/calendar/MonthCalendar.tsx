@@ -14,14 +14,26 @@ import {
   cloneElement,
   ComponentProps,
   createContext,
+  ForwardedRef,
   forwardRef,
   isValidElement,
   RefObject,
   useContext,
+  useEffect,
+  useRef,
 } from "react";
 import { Context as CalendarContext } from "./Calendar";
 import type { ReactNode } from "react";
 import type { EP } from "utils/types";
+
+function assignRef<T>(ref: ForwardedRef<T>, value: T | null): ForwardedRef<T> {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
+  return ref;
+}
 
 const getDatesInMonth = (focus: Date) =>
   eachDayOfInterval({
@@ -32,6 +44,7 @@ const getDatesInMonth = (focus: Date) =>
 interface State {
   focus: Date;
   table: (Date | undefined)[][];
+  ref: RefObject<HTMLTableElement> | null;
 }
 const Context = createContext<State | null>(null);
 function useMonthCalendarContext(error: string) {
@@ -92,23 +105,32 @@ const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
 
             const element = children?.(day);
             const tabIndex = isSameDay(day, context.focus) ? 0 : -1;
-            const ref = isSameDay(day, context.focus) ? _ref : undefined;
+
+            const isFocusWithinTable = context.ref?.current?.contains(
+              document.activeElement
+            );
+            const ref = isSameDay(day, context.focus)
+              ? (element: HTMLElement | null) => {
+                  assignRef(_ref, element);
+                  isFocusWithinTable && element?.focus();
+                }
+              : undefined;
 
             if (isValidElement(element)) {
               return (
                 <td key={index} {...props}>
-                  {cloneElement(element, { ...element.props, tabIndex, ref })}
+                  {cloneElement(element, {
+                    ...element.props,
+                    tabIndex,
+                    ref,
+                    "date-date": format(day, "dd/MM/yyyy"),
+                  })}
                 </td>
               );
             }
 
             return (
-              <td
-                key={index}
-                {...props}
-                tabIndex={tabIndex}
-                ref={ref as RefObject<HTMLTableCellElement>}
-              >
+              <td key={index} {...props} tabIndex={tabIndex} ref={ref}>
                 {format(day, "dd")}
               </td>
             );
@@ -149,12 +171,17 @@ const Grid = forwardRef<HTMLTableElement, GridProps>((props, ref) => {
 
   const table = splitEvery(7, days);
 
+  const innerRef = useRef<HTMLTableElement | null>(null);
+
   return (
-    <Context.Provider value={{ focus, table }}>
+    <Context.Provider value={{ focus, table, ref: innerRef }}>
       <table
         {...rest}
         role="grid"
-        ref={ref}
+        ref={(element) => {
+          assignRef(innerRef, element);
+          assignRef(ref, element);
+        }}
         aria-labelledby={context?.grid_label}
       >
         <thead role="rowgroup">

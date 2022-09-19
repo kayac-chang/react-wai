@@ -2,6 +2,7 @@ import { add, endOfWeek, format, startOfWeek, sub } from "date-fns";
 import {
   createContext,
   MouseEvent,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -47,40 +48,39 @@ function reducer(date: Date, action: Action) {
   return date;
 }
 
-const keymap =
-  (dispatch: Dispatch<Action>) =>
-  ({ shiftKey, key }: KeyboardEvent) => {
-    if (shiftKey && key === "PageUp") {
-      return dispatch("previous year");
-    }
-    if (shiftKey && key === "PageDown") {
-      return dispatch("next year");
-    }
-    if (key === "PageUp") {
-      return dispatch("previous month");
-    }
-    if (key === "PageDown") {
-      return dispatch("next month");
-    }
-    if (key === "ArrowDown") {
-      return dispatch("next week");
-    }
-    if (key === "ArrowUp") {
-      return dispatch("previous week");
-    }
-    if (key === "ArrowLeft") {
-      return dispatch("previous day");
-    }
-    if (key === "ArrowRight") {
-      return dispatch("next day");
-    }
-    if (key === "Home") {
-      return dispatch("start of week");
-    }
-    if (key === "End") {
-      return dispatch("end of week");
-    }
-  };
+const keymap = (dispatch: Dispatch<Action>) => (event: KeyboardEvent) => {
+  const { shiftKey, key } = event;
+  if (shiftKey && key === "PageUp") {
+    return dispatch("previous year");
+  }
+  if (shiftKey && key === "PageDown") {
+    return dispatch("next year");
+  }
+  if (key === "PageUp") {
+    return dispatch("previous month");
+  }
+  if (key === "PageDown") {
+    return dispatch("next month");
+  }
+  if (key === "ArrowDown") {
+    return dispatch("next week");
+  }
+  if (key === "ArrowUp") {
+    return dispatch("previous week");
+  }
+  if (key === "ArrowLeft") {
+    return dispatch("previous day");
+  }
+  if (key === "ArrowRight") {
+    return dispatch("next day");
+  }
+  if (key === "Home") {
+    return dispatch("start of week");
+  }
+  if (key === "End") {
+    return dispatch("end of week");
+  }
+};
 
 interface State {
   focus: Date;
@@ -114,13 +114,32 @@ function Button(props: ButtonProps) {
   );
 
   const { action, ...rest } = props;
-  const onClick = (event: MouseEvent<HTMLButtonElement>) => {
-    context.dispatch(action);
-    props.onClick?.(event);
-  };
+  const onClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      context.dispatch(action);
+      props.onClick?.(event);
+    },
+    [context.dispatch, action, props.onClick]
+  );
+
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key === "Space") {
+        context.dispatch(action);
+        props.onKeyDown?.(event);
+      }
+    },
+    [context.dispatch, action, props.onKeyDown]
+  );
 
   return (
-    <button type="button" {...rest} onClick={onClick} aria-label={action}>
+    <button
+      {...rest}
+      type="button"
+      aria-label={action}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+    >
       {props.children}
     </button>
   );
