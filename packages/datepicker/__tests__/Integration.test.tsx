@@ -577,6 +577,7 @@ describe("DatePicker and Calendar integration", () => {
           async () => {
             setup(new Date(0));
             await user.click(screen.getByRole("button"));
+            expect(screen.queryByText("01")).toHaveFocus();
             await user.keyboard("{Shift>}{PageDown}{/Shift}");
             expect(screen.queryByText("01")).toHaveFocus();
           }

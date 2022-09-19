@@ -19,7 +19,6 @@ import {
   isValidElement,
   RefObject,
   useContext,
-  useEffect,
   useRef,
 } from "react";
 import { Context as CalendarContext } from "./Calendar";
@@ -123,7 +122,6 @@ const GridCell = forwardRef<HTMLElement, GridCellProps>((_props, _ref) => {
                     ...element.props,
                     tabIndex,
                     ref,
-                    "date-date": format(day, "dd/MM/yyyy"),
                   })}
                 </td>
               );
