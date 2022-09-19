@@ -12,7 +12,7 @@ describe("<DatePicker />", () => {
     user.setup();
     return render(
       <DatePicker value={initialValue}>
-        <DatePicker.Field />
+        <DatePicker.Field format={(value) => format(value, "MM/dd/yyyy")} />
         <DatePicker.Button action={{ type: "trigger calendar" }}>
           {({ value }) =>
             value
