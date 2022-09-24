@@ -1,8 +1,19 @@
-import { ReactNode, useContext, useId, useState } from "react";
-import { createContext } from "react";
+import {
+  Children,
+  cloneElement,
+  Context,
+  createContext,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import type { ReactNode } from "react";
 import type { PCP } from "utils/types";
+import { useContextWithError } from "utils/hooks";
 
-interface State {
+interface ItemState {
   open: boolean;
   toggle: () => void;
   id: {
@@ -10,31 +21,40 @@ interface State {
     labelledby: string;
   };
 }
-const Context = createContext<State | null>(null);
-
+const ItemContext = createContext<ItemState | null>(null);
 function useItemContext(error: string) {
-  const context = useContext(Context);
-  if (!context) {
-    throw new Error(error);
-  }
-  return context;
+  return useContextWithError(ItemContext, error);
+}
+
+interface SingleState {
+  expand?: string;
+  setExpand: (expand?: string) => void;
+}
+const Context = createContext<SingleState | null>(null);
+
+function useContext(error: string) {
+  return useContextWithError(Context, error);
 }
 
 type ItemProps = {
+  id?: string;
   children?: ReactNode;
+  open?: boolean;
 };
 function Item(props: ItemProps) {
-  const [open, setOpen] = useState(true);
-  const toggle = () => setOpen(!open);
-  const _id = useId();
+  const context = useContext(
+    `<Accordion.Item /> cannot be rendered outside <Accordion />`
+  );
   const id = {
-    controls: _id + "controls",
-    labelledby: _id + "labelledby",
+    controls: props.id + "controls",
+    labelledby: props.id + "labelledby",
   };
+  const open = context.expand === props.id;
+  const toggle = () => context.setExpand(props.id);
   return (
-    <Context.Provider value={{ open, toggle, id }}>
+    <ItemContext.Provider value={{ open, toggle, id }}>
       {props.children}
-    </Context.Provider>
+    </ItemContext.Provider>
   );
 }
 
@@ -44,9 +64,25 @@ function Header(props: HeaderProps) {
     `<Accordion.Header /> cannot be rendered outside <Accordion />`
   );
   const Comp = props.as ?? "h2";
+
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (document.activeElement !== ref.current) return;
+
+      if (event.code === "Space") {
+        event.preventDefault();
+        context.toggle();
+      }
+    };
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, [context.toggle]);
+
   return (
     <Comp>
       <button
+        ref={ref}
         type="button"
         id={context.id.labelledby}
         aria-expanded={context.open}
@@ -77,11 +113,44 @@ function Panel(props: PanelProps) {
   );
 }
 
+type SingleProps = {
+  children?: ReactNode;
+};
+function Single(props: SingleProps) {
+  const id = useId();
+
+  const ids: string[] = [];
+  Children.forEach(props.children, (element, index) => {
+    if (isValidElement(element) && element.type === Item) {
+      ids.push(element.props.id ?? id + index);
+    }
+  });
+
+  const [expand, _setExpand] = useState<string | undefined>(ids[0]);
+
+  const setExpand = (id?: string) => {
+    if (expand !== id) _setExpand(id);
+  };
+
+  return (
+    <Context.Provider value={{ expand, setExpand }}>
+      {Children.map(props.children, (element) => {
+        if (isValidElement(element) && element.type === Item) {
+          return cloneElement(element, { id: ids.shift(), ...element.props });
+        }
+
+        return element;
+      })}
+    </Context.Provider>
+  );
+}
+
 type AccordionProps = {
+  type?: "single";
   children?: ReactNode;
 };
 export function Accordion(props: AccordionProps) {
-  return <>{props.children}</>;
+  return <Single>{props.children}</Single>;
 }
 
 Accordion.Item = Item;

@@ -93,6 +93,10 @@ describe("<Accordion />", () => {
               <Accordion.Header>Personal Information</Accordion.Header>
               <Accordion.Panel>test content</Accordion.Panel>
             </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Billing Address</Accordion.Header>
+              <Accordion.Panel>test content 2</Accordion.Panel>
+            </Accordion.Item>
           </Accordion>
         );
 
@@ -103,7 +107,7 @@ describe("<Accordion />", () => {
         expect(screen.queryByText("test content")).toBeInTheDocument();
 
         await user.click(
-          screen.getByRole("button", { name: "Personal Information" })
+          screen.getByRole("button", { name: "Billing Address" })
         );
 
         expect(screen.queryByText("test content")).not.toBeInTheDocument();
@@ -176,6 +180,114 @@ describe("<Accordion />", () => {
           );
         });
       });
+    });
+  });
+
+  describe("keyboard support", () => {
+    describe("when focus is on the accordion header of a collapsed section, expands the section", () => {
+      it("enter", async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>test content</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Billing Address</Accordion.Header>
+              <Accordion.Panel>test content 2</Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
+
+        expect(screen.queryByText("test content 2")).not.toBeInTheDocument();
+        screen.getByRole("button", { name: "Billing Address" }).focus();
+        await user.keyboard("{enter}");
+        expect(screen.queryByText("test content 2")).toBeInTheDocument();
+      });
+
+      it("space", async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>test content</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Billing Address</Accordion.Header>
+              <Accordion.Panel>test content 2</Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
+
+        expect(screen.queryByText("test content 2")).not.toBeInTheDocument();
+        screen.getByRole("button", { name: "Billing Address" }).focus();
+        await user.keyboard(" ");
+        expect(screen.queryByText("test content 2")).toBeInTheDocument();
+      });
+    });
+
+    it(
+      "if the implementation allows only one panel to be expanded, " +
+        "and if another panel is expanded, collapses that panel.",
+      async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>test content 1</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Billing Address</Accordion.Header>
+              <Accordion.Panel>test content 2</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Shipping Address</Accordion.Header>
+              <Accordion.Panel>test content 3</Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
+
+        expect(screen.queryByText("test content 1")).toBeInTheDocument();
+        expect(screen.queryByText("test content 2")).not.toBeInTheDocument();
+        expect(screen.queryByText("test content 3")).not.toBeInTheDocument();
+
+        await user.click(
+          screen.getByRole("button", { name: "Billing Address" })
+        );
+        expect(screen.queryByText("test content 1")).not.toBeInTheDocument();
+        expect(screen.queryByText("test content 2")).toBeInTheDocument();
+        expect(screen.queryByText("test content 3")).not.toBeInTheDocument();
+
+        await user.click(
+          screen.getByRole("button", { name: "Shipping Address" })
+        );
+        expect(screen.queryByText("test content 1")).not.toBeInTheDocument();
+        expect(screen.queryByText("test content 2")).not.toBeInTheDocument();
+        expect(screen.queryByText("test content 3")).toBeInTheDocument();
+      }
+    );
+
+    it.todo(
+      "Some implementations require one panel to be expanded at all times and allow only one panel to be expanded; so, they do not support a collapse function."
+    );
+
+    describe("tab", () => {
+      it.todo("moves focus to the next focusable element");
+
+      it.todo(
+        "all focusable elements in the accordion are included in the page tab sequence"
+      );
+    });
+
+    describe("shift + tab", () => {
+      it.todo("moves focus to the next focusable element");
+
+      it.todo(
+        "all focusable elements in the accordion are included in the page tab sequence"
+      );
     });
   });
 });
