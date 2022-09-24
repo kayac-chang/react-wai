@@ -113,9 +113,12 @@ function Panel(props: PanelProps) {
   );
 }
 
-type SingleProps = {
+type BaseProps = {
+  collapse?: boolean;
   children?: ReactNode;
 };
+
+type SingleProps = BaseProps;
 function Single(props: SingleProps) {
   const id = useId();
 
@@ -129,7 +132,13 @@ function Single(props: SingleProps) {
   const [expand, _setExpand] = useState<string | undefined>(ids[0]);
 
   const setExpand = (id?: string) => {
-    if (expand !== id) _setExpand(id);
+    if (props.collapse) {
+      return _setExpand(expand === id ? undefined : id);
+    }
+
+    if (expand !== id) {
+      return _setExpand(id);
+    }
   };
 
   return (
@@ -145,12 +154,11 @@ function Single(props: SingleProps) {
   );
 }
 
-type AccordionProps = {
+type AccordionProps = BaseProps & {
   type?: "single";
-  children?: ReactNode;
 };
 export function Accordion(props: AccordionProps) {
-  return <Single>{props.children}</Single>;
+  return <Single collapse={props.collapse}>{props.children}</Single>;
 }
 
 Accordion.Item = Item;

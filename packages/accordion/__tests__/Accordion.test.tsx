@@ -270,24 +270,257 @@ describe("<Accordion />", () => {
       }
     );
 
-    it.todo(
-      "Some implementations require one panel to be expanded at all times and allow only one panel to be expanded; so, they do not support a collapse function."
+    describe(
+      "some implementations require one panel to be expanded at all times " +
+        "and allow only one panel to be expanded; " +
+        "so, they do not support a collapse function.",
+      () => {
+        it("accordion without `collapse` attribute require one panel expanded at all time", async () => {
+          user.setup();
+          render(
+            <Accordion>
+              <Accordion.Item>
+                <Accordion.Header>Personal Information</Accordion.Header>
+                <Accordion.Panel>test content 1</Accordion.Panel>
+              </Accordion.Item>
+              <Accordion.Item>
+                <Accordion.Header>Billing Address</Accordion.Header>
+                <Accordion.Panel>test content 2</Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+          );
+
+          expect(screen.queryByText("test content 1")).toBeInTheDocument();
+          await user.click(screen.getByText("Personal Information"));
+          expect(screen.queryByText("test content 1")).toBeInTheDocument();
+
+          await user.click(screen.getByText("Billing Address"));
+          expect(screen.queryByText("test content 1")).not.toBeInTheDocument();
+          expect(screen.queryByText("test content 2")).toBeInTheDocument();
+          await user.click(screen.getByText("Billing Address"));
+          expect(screen.queryByText("test content 1")).not.toBeInTheDocument();
+          expect(screen.queryByText("test content 2")).toBeInTheDocument();
+        });
+
+        it("accordion with `collapse` attribute can collapse", async () => {
+          user.setup();
+          render(
+            <Accordion collapse>
+              <Accordion.Item>
+                <Accordion.Header>Personal Information</Accordion.Header>
+                <Accordion.Panel>test content 1</Accordion.Panel>
+              </Accordion.Item>
+              <Accordion.Item>
+                <Accordion.Header>Billing Address</Accordion.Header>
+                <Accordion.Panel>test content 2</Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+          );
+
+          expect(screen.queryByText("test content 1")).toBeInTheDocument();
+          await user.click(screen.getByText("Personal Information"));
+          expect(screen.queryByText("test content 1")).not.toBeInTheDocument();
+
+          await user.click(screen.getByText("Billing Address"));
+          expect(screen.queryByText("test content 2")).toBeInTheDocument();
+          await user.click(screen.getByText("Billing Address"));
+          expect(screen.queryByText("test content 2")).not.toBeInTheDocument();
+        });
+      }
     );
 
     describe("tab", () => {
-      it.todo("moves focus to the next focusable element");
+      it("moves focus to the next focusable element", async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>test content 1</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Billing Address</Accordion.Header>
+              <Accordion.Panel>test content 2</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Shipping Address</Accordion.Header>
+              <Accordion.Panel>test content 3</Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
 
-      it.todo(
-        "all focusable elements in the accordion are included in the page tab sequence"
-      );
+        await user.keyboard("{Tab}");
+        expect(screen.getByText("Personal Information")).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByText("Billing Address")).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByText("Shipping Address")).toHaveFocus();
+      });
+
+      it("all focusable elements in the accordion are included in the page tab sequence", async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>
+                <fieldset>
+                  <p>
+                    <label htmlFor="cufc1">
+                      Name<span aria-hidden="true">*</span>:
+                    </label>
+                    <input
+                      type="text"
+                      name="Name"
+                      id="cufc1"
+                      aria-required="true"
+                    />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc2">
+                      Email<span aria-hidden="true">*</span>:
+                    </label>
+                    <input
+                      type="text"
+                      name="Email"
+                      id="cufc2"
+                      aria-required="true"
+                    />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc3">Phone:</label>
+                    <input type="text" name="Phone" id="cufc3" />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc4">Extension:</label>
+                    <input type="text" name="Ext" id="cufc4" />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc5">Country:</label>
+                    <input type="text" name="Country" id="cufc5" />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc6">City/Province:</label>
+                    <input type="text" name="City_Province" id="cufc6" />
+                  </p>
+                </fieldset>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
+
+        await user.keyboard("{Tab}");
+        expect(screen.getByText("Personal Information")).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByLabelText(/Name/)).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByLabelText(/Email/)).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByLabelText(/Phone/)).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByLabelText(/Extension/)).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByLabelText(/Country/)).toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.getByLabelText(/City\/Province/)).toHaveFocus();
+      });
     });
 
     describe("shift + tab", () => {
-      it.todo("moves focus to the next focusable element");
+      it("moves focus to the next focusable element", async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>test content 1</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Billing Address</Accordion.Header>
+              <Accordion.Panel>test content 2</Accordion.Panel>
+            </Accordion.Item>
+            <Accordion.Item>
+              <Accordion.Header>Shipping Address</Accordion.Header>
+              <Accordion.Panel>test content 3</Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
 
-      it.todo(
-        "all focusable elements in the accordion are included in the page tab sequence"
-      );
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByText("Shipping Address")).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByText("Billing Address")).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByText("Personal Information")).toHaveFocus();
+      });
+
+      it("all focusable elements in the accordion are included in the page tab sequence", async () => {
+        user.setup();
+        render(
+          <Accordion>
+            <Accordion.Item>
+              <Accordion.Header>Personal Information</Accordion.Header>
+              <Accordion.Panel>
+                <fieldset>
+                  <p>
+                    <label htmlFor="cufc1">
+                      Name<span aria-hidden="true">*</span>:
+                    </label>
+                    <input
+                      type="text"
+                      name="Name"
+                      id="cufc1"
+                      aria-required="true"
+                    />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc2">
+                      Email<span aria-hidden="true">*</span>:
+                    </label>
+                    <input
+                      type="text"
+                      name="Email"
+                      id="cufc2"
+                      aria-required="true"
+                    />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc3">Phone:</label>
+                    <input type="text" name="Phone" id="cufc3" />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc4">Extension:</label>
+                    <input type="text" name="Ext" id="cufc4" />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc5">Country:</label>
+                    <input type="text" name="Country" id="cufc5" />
+                  </p>
+                  <p>
+                    <label htmlFor="cufc6">City/Province:</label>
+                    <input type="text" name="City_Province" id="cufc6" />
+                  </p>
+                </fieldset>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
+        );
+
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByLabelText(/City\/Province/)).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByLabelText(/Country/)).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByLabelText(/Extension/)).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByLabelText(/Phone/)).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByLabelText(/Email/)).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByLabelText(/Name/)).toHaveFocus();
+        await user.keyboard("{Shift>}{Tab}{/Shift}");
+        expect(screen.getByText("Personal Information")).toHaveFocus();
+      });
     });
   });
 });
