@@ -1,0 +1,7 @@
+{
+  "extends": "tsconfig/nextjs.json",
+  "compilerOptions": {
+    "types": ["cypress", "node"]
+  },
+  "include": ["."],
+}

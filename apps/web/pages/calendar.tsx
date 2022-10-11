@@ -18,13 +18,13 @@ export default function Web() {
           </div>
         </Calendar.Header>
 
-        <MonthCalendar>
+        <MonthCalendar.Grid>
           <MonthCalendar.ColumnHeader />
 
           <MonthCalendar.GridCell>
             {(date) => <button className="p-3">{format(date, "dd")}</button>}
           </MonthCalendar.GridCell>
-        </MonthCalendar>
+        </MonthCalendar.Grid>
       </Calendar>
     </div>
   );
